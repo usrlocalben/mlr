@@ -17,9 +17,9 @@
 #include "picopng.h"
 #include "gason.h"
 
-#include "mlr.h"
 #include "vec.h"
 #include "obj.h"
+#include "main.h"
 #include "mesh.h"
 #include "demo.h"
 #include "utils.h"

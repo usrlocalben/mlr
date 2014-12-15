@@ -11,7 +11,7 @@
 
 #include <Windows.h>
 
-#include "mlr.h"
+#include "main.h"
 #include "tri.h"
 #include "tri_sd.h"
 #include "demo.h"

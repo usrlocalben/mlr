@@ -9,7 +9,7 @@
 
 #include <Windows.h>
 
-#include "mlr.h"
+#include "main.h"
 
 using std::cout;
 using std::endl;
