@@ -137,13 +137,11 @@ public:
 	MeshySet(const Mesh * const mesh, mat4& xform) :Meshy(mesh), xform(xform) {}
 	virtual mat4 begin(const int t){
 		int& idx = this->idx[t];
-		mat4& xform = this->xform[t];
 		idx = 0;
 		return mat4::ident();
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
-		mat4& xform = this->xform[t];
 		if (idx == 0) {
 			m = xform;
 			idx++;
@@ -154,7 +152,7 @@ public:
 	}
 private:
 	std::array<int,16> idx;
-	std::array<mat4,16> xform;
+	mat4 xform;
 };
 
 
@@ -164,14 +162,12 @@ public:
 
 	virtual mat4 begin(const int t) {
 		int& idx = this->idx[t];
-		mat4& xform = this->xform[t];
 		idx = 0;
 		in.begin();
 		return mat4::ident();
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
-		mat4& xform = this->xform[t];
 
 		mat4 in_mat;
 		auto alive = in.next(t, in_mat);
@@ -186,8 +182,7 @@ public:
 
 private:
 	Meshy& in;
-
-	std::array<mat4,16> xform;
+	mat4 xform;
 	std::array<int,16> idx;
 };
 
