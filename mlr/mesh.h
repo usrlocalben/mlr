@@ -239,28 +239,35 @@ public:
 		int& idx = this->idx[t];
 		mat4& xform = this->xform[t];
 
-		float minx,miny,minz;
-		float maxx,maxy,maxz;
+		vec4 bbox_min;
+		vec4 bbox_max;
 		in.begin(t);
 		mat4 in_mat;
 		in.next(t, in_mat);
 		vec4 xb = mat4_mul(in_mat, mesh->bbox[0]);
-		minx = maxx = xb.x;
-		miny = maxy = xb.y;
-		minz = maxz = xb.z;
+		bbox_min = bbox_max = xb;
 
 		in.begin(t);
 		while ( in.next(t, in_mat) ) {
 			for (unsigned i=0; i<8; i++ ){
 				vec4 xb = mat4_mul(in_mat, mesh->bbox[i]);
-				minx = std::min(xb.x, minx);    maxx = std::max(xb.x, maxx);
-				miny = std::min(xb.y, miny);    maxy = std::max(xb.y, maxy);
-				minz = std::min(xb.z, minz);    maxz = std::max(xb.z, maxz);
+				bbox_min = vmin(bbox_min, xb);
+				bbox_max = vmax(bbox_max, xb);
 			}
 		}
 
-//		cout << "min:" << vec3(minx, miny, minz) << endl;
-//		cout << "max:" << vec3(maxx, maxy, maxz) << endl;
+		float& minx = bbox_min.x;
+		float& miny = bbox_min.y;
+		float& minz = bbox_min.z;
+		float& maxx = bbox_max.x;
+		float& maxy = bbox_max.y;
+		float& maxz = bbox_max.z;
+
+		/*
+		vec4 centered = -(bbox_min + (bbox_max - bbox_min) / vec4(2.0f));
+		ivec4 mask(center_x ? -1 : 0, center_y ? -1 : 0, center_z ? -1 : 0, 0);
+		*/
+
 		// calculate mat4 based on mins and maxs
 		const float move_x = center_x ? -(minx + (maxx - minx) / 2) : 0;
 		float move_y;
