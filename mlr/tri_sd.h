@@ -7,7 +7,7 @@
 #include <array>
 
 #include "ryg_srgb.h"
-#include "shadertools.h"
+#include "vec_soa.h"
 #include "canvas.h"
 #include "vec.h"
 

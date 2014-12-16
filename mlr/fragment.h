@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 
-#include "shadertools.h"
+#include "vec_soa.h"
 #include "canvas.h"
 
 class FlatShader {

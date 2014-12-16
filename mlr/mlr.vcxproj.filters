@@ -69,9 +69,6 @@
     <ClInclude Include="dib24.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shadertools.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tri.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -121,6 +118,9 @@
       <Filter>libs</Filter>
     </ClInclude>
     <ClInclude Include="fragment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vec_soa.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,6 @@
 
-#ifndef __SHADERTOOLS_H
-#define __SHADERTOOLS_H
+#ifndef __VEC_SOA_H
+#define __VEC_SOA_H
 
 #include "stdafx.h"
 
@@ -159,4 +159,4 @@ __forceinline void fwidth(const vec4 * const __restrict src, vec4 * const __rest
 		dst[i] = abs(ddx(s[i])) + abs(ddy(s[i]));
 }
 
-#endif //__SHADERTOOLS_H
+#endif //__VEC_SOA_H
