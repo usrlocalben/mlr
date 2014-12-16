@@ -111,9 +111,6 @@
     <ClInclude Include="PixelToaster.h">
       <Filter>libs\pixeltoaster</Filter>
     </ClInclude>
-    <ClInclude Include="meshops.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="aligned_allocator.h">
       <Filter>libs</Filter>
     </ClInclude>
@@ -122,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="ryg_srgb.h">
       <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="fragment.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

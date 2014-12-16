@@ -3,13 +3,14 @@
 
 #include <vector>
 
+#include "tri.h"
 #include "vec.h"
 #include "clip.h"
 #include "mesh.h"
+#include "render.h"
 #include "texture.h"
 #include "viewport.h"
-#include "render.h"
-#include "tri.h"
+#include "fragment.h"
 
 using namespace std;
 

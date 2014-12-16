@@ -25,13 +25,10 @@
 using namespace std;
 using boost::format;
 
-ShadedShader my_shader;
-
 SOACanvas rendertarget;
 SOADepth depthtarget;
 
 vectorsse<vec4> colorpack;
-
 
 Timer gt;
 
