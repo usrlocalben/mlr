@@ -315,8 +315,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 }
 
 
-
-void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, function<void(bool)>& mark)
+void Pipeline::render(struct SOADepth& db, struct SOACanvas& cb, class MaterialStore& materialstore, class TextureStore& texturestore, std::function<void(bool)>& mark, TrueColorPixel * const __restrict target, const int target_width)
 {
 	auto my_thread_id = 0;
 	auto thread_count = 1;
@@ -331,10 +330,16 @@ void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 	mark(true);
 
 	for (auto& idx : bin_index) {
+
+		const irect& tilerect = pipes[0].binner.bins[idx.first].rect;
+
+		db.clear(tilerect);
+		cb.clear(tilerect);
 		for (int ti = 0; ti < threads; ti++) {
-			pipes[ti].render(db, cb, materialstore, texturestore, vp, idx.first);
+			pipes[ti].render(db.rawptr(), cb.rawptr(), materialstore, texturestore, vp, idx.first);
 			mark(false);
 		}
+		convertCanvas(tilerect, target_width, target, cb.rawptr(), PostprocessNoop());
 	}
 }
 

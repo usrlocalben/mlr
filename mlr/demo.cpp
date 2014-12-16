@@ -58,7 +58,7 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	texturestore(texturestore),
 	materialstore(materialstore),
 	telemetry(telemetry),
-	pipeline(16)
+	pipeline(1)
 {
 	on_resize(0, 0);
 
@@ -97,10 +97,6 @@ void Demo::render(
 	auto cubescale = vec3(cubescale_x, cubescale_y, cubescale_z);
 	Viewport vp(config_width, config_height, float(config_width) / float(config_height), zorp);
 
-	telemetry.mark();
-
-	depthtarget.clear(wholescreen);
-	rendertarget.clear(wholescreen);
 	telemetry.mark();
 
 	pipeline.reset(config_width, config_height);
@@ -142,11 +138,9 @@ void Demo::render(
 	telemetry.mark();
 	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
 
-
-	pipeline.render(depthtarget.rawptr(), rendertarget.rawptr(), this->materialstore, this->texturestore, _mark);
+	pipeline.render(depthtarget, rendertarget, this->materialstore, this->texturestore, _mark, target, target_width);
 	telemetry.inc();
 
-	convertCanvas(wholescreen, target_width, target, rendertarget.rawptr(), PostprocessNoop());
 	telemetry.mark();
 }
 
