@@ -12,6 +12,7 @@
 #include "vec.h"
 #include "mesh.h"
 #include "canvas.h"
+#include "meshops.h"
 
 
 struct PVertex {
