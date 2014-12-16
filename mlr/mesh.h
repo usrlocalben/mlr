@@ -162,7 +162,7 @@ public:
 	virtual void begin(const int t) {
 		int& idx = this->idx[t];
 		idx = 0;
-		in.begin();
+		in.begin(t);
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
@@ -194,7 +194,7 @@ public:
 
 		idx = 0; 
 		calc(idx, xform);
-		in.begin();
+		in.begin(t);
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
