@@ -123,7 +123,7 @@ class Meshy {
 public:
 	const Mesh * mesh;
 	Meshy(const Mesh * const mesh) : mesh(mesh) {}
-	virtual mat4 begin(const int t) = 0;
+	virtual void begin(const int t) = 0;
 	virtual bool next(const int t, mat4& m) = 0;
 	__forceinline void* operator new[]   (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void* operator new     (size_t x){ return _aligned_malloc(x, 16); }
@@ -135,10 +135,9 @@ class MeshySet : public Meshy {
 public:
 
 	MeshySet(const Mesh * const mesh, mat4& xform) :Meshy(mesh), xform(xform) {}
-	virtual mat4 begin(const int t){
+	virtual void begin(const int t){
 		int& idx = this->idx[t];
 		idx = 0;
-		return mat4::ident();
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
@@ -160,11 +159,10 @@ class MeshyTranslate : public Meshy {
 public:
 	MeshyTranslate(Meshy& inmesh, mat4& xform) :Meshy(inmesh.mesh), in(inmesh), xform(xform) {}
 
-	virtual mat4 begin(const int t) {
+	virtual void begin(const int t) {
 		int& idx = this->idx[t];
 		idx = 0;
 		in.begin();
-		return mat4::ident();
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
@@ -190,14 +188,13 @@ class MeshyMultiply : public Meshy {
 public:
 	MeshyMultiply(Meshy& inmesh, int many, vec3& translate, vec3& scale) :Meshy(inmesh.mesh), in(inmesh), many(many), translate(translate), scale(scale) {}
 
-	virtual mat4 begin(const int t) {
+	virtual void begin(const int t) {
 		int& idx = this->idx[t];
 		mat4& xform = this->xform[t];
 
 		idx = 0; 
 		calc(idx, xform);
 		in.begin();
-		return mat4::ident();
 	}
 	virtual bool next(const int t, mat4& m) {
 		int& idx = this->idx[t];
@@ -238,7 +235,7 @@ class MeshyCenter : public Meshy {
 public:
 	MeshyCenter(Meshy& inmesh, const bool center_x, const bool center_y, const bool center_z, const bool y_on_floor) :Meshy(inmesh.mesh), in(inmesh), center_x(center_x), center_y(center_y), center_z(center_z), y_on_floor(y_on_floor){}
 
-	virtual mat4 begin(const int t) {
+	virtual void begin(const int t) {
 		int& idx = this->idx[t];
 		mat4& xform = this->xform[t];
 
@@ -279,7 +276,6 @@ public:
 
 		idx = 0;
 		in.begin(t);
-		return mat4::ident();
 	}
 
 	virtual bool next(const int t, mat4& m) {

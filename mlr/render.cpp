@@ -307,7 +307,8 @@ void Pipeline::addMeshy(Meshy& mi)
 {
 	const Mesh& mesh = *mi.mesh;
 
-	for (auto item = mi.begin(); mi.next(item);) {
+	mat4 item;
+	for (mi.begin(); mi.next(item);) {
 
 		mat4 to_camera;
 		mat4_mul(camera_inverse, item, to_camera);
