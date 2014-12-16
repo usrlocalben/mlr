@@ -31,7 +31,6 @@ SOADepth depthtarget;
 
 vectorsse<vec4> colorpack;
 
-Pipeline pipeline;
 
 Timer gt;
 
@@ -57,7 +56,8 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	meshstore(meshstore),
 	texturestore(texturestore),
 	materialstore(materialstore),
-	telemetry(telemetry)
+	telemetry(telemetry),
+	pipeline(16)
 {
 	on_resize(0, 0);
 
@@ -69,7 +69,6 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 Demo::~Demo()
 {
 }
-
 
 
 void Demo::render(
@@ -143,7 +142,7 @@ void Demo::render(
 	function<void()> _mark = bind(&Telemetry::mark2, &telemetry);
 
 
-	pipeline.render2(depthtarget.rawptr(), rendertarget.rawptr(), this->materialstore, this->texturestore, _mark);
+	pipeline.render(depthtarget.rawptr(), rendertarget.rawptr(), this->materialstore, this->texturestore, _mark);
 	telemetry.inc();
 
 	convertCanvas(wholescreen, target_width, target, rendertarget.rawptr(), PostprocessNoop());
