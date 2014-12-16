@@ -365,9 +365,10 @@ void Telemetry::mark()
 	this->markers.push_back({ teletimer.delta()*1000, this->x++ });
 }
 
-void Telemetry::mark2()
+void Telemetry::mark2(bool advance)
 {
 	this->markers.push_back({ teletimer.delta()*1000, this->x });
+	if (advance) this->x++;
 }
 
 void Telemetry::end()

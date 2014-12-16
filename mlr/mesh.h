@@ -123,8 +123,8 @@ class Meshy {
 public:
 	const Mesh * mesh;
 	Meshy(const Mesh * const mesh) : mesh(mesh) {}
-	virtual mat4 begin() = 0;
-	virtual bool next(mat4& m) = 0;
+	virtual void begin(const int t) = 0;
+	virtual bool next(const int t, mat4& m) = 0;
 	__forceinline void* operator new[]   (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void* operator new     (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void  operator delete[](void*  x) { if (x) _aligned_free(x); }
@@ -135,11 +135,12 @@ class MeshySet : public Meshy {
 public:
 
 	MeshySet(const Mesh * const mesh, mat4& xform) :Meshy(mesh), xform(xform) {}
-	virtual mat4 begin(){
+	virtual void begin(const int t){
+		int& idx = this->idx[t];
 		idx = 0;
-		return mat4::ident();
 	}
-	virtual bool next(mat4& m) {
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
 		if (idx == 0) {
 			m = xform;
 			idx++;
@@ -149,7 +150,7 @@ public:
 		}
 	}
 private:
-	int idx;
+	std::array<int,16> idx;
 	mat4 xform;
 };
 
@@ -158,14 +159,16 @@ class MeshyTranslate : public Meshy {
 public:
 	MeshyTranslate(Meshy& inmesh, mat4& xform) :Meshy(inmesh.mesh), in(inmesh), xform(xform) {}
 
-	virtual mat4 begin() {
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
 		idx = 0;
-		in.begin();
-		return mat4::ident();
+		in.begin(t);
 	}
-	virtual bool next(mat4& m) {
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+
 		mat4 in_mat;
-		auto alive = in.next(in_mat);
+		auto alive = in.next(t, in_mat);
 		if (alive) {
 			mat4_mul(xform, in_mat, m);
 			idx++;
@@ -176,32 +179,37 @@ public:
 	}
 
 private:
-	mat4 xform;
-	int idx;
 	Meshy& in;
+	mat4 xform;
+	std::array<int,16> idx;
 };
 
 class MeshyMultiply : public Meshy {
 public:
 	MeshyMultiply(Meshy& inmesh, int many, vec3& translate, vec3& scale) :Meshy(inmesh.mesh), in(inmesh), many(many), translate(translate), scale(scale) {}
 
-	virtual mat4 begin() {
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
+
 		idx = 0; 
 		calc(idx, xform);
-		in.begin();
-		return mat4::ident();
+		in.begin(t);
 	}
-	virtual bool next(mat4& m) {
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
+
 		if (idx == many) return false;
 
 		mat4 in_mat;
-		auto alive = in.next(in_mat);
+		auto alive = in.next(t, in_mat);
 		if (!alive) {
 			idx++;
 			calc(idx, xform);
 			if (idx == many) return false;
-			in.begin();
-			in.next(in_mat);
+			in.begin(t);
+			in.next(t, in_mat);
 		}
 
 		mat4_mul(xform, in_mat, m);
@@ -214,42 +222,52 @@ public:
 		mat4_mul(tr, sc, xform);
 	}
 private:
+	Meshy& in;
 	int many;
-	mat4 xform;
 	vec3 translate;
 	vec3 scale;
-	int idx;
-	Meshy& in;
+
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
 };
 
 class MeshyCenter : public Meshy {
 public:
 	MeshyCenter(Meshy& inmesh, const bool center_x, const bool center_y, const bool center_z, const bool y_on_floor) :Meshy(inmesh.mesh), in(inmesh), center_x(center_x), center_y(center_y), center_z(center_z), y_on_floor(y_on_floor){}
 
-	virtual mat4 begin() {
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
 
-		float minx,miny,minz;
-		float maxx,maxy,maxz;
-		in.begin();
+		vec4 bbox_min;
+		vec4 bbox_max;
+		in.begin(t);
 		mat4 in_mat;
-		in.next(in_mat);
+		in.next(t, in_mat);
 		vec4 xb = mat4_mul(in_mat, mesh->bbox[0]);
-		minx = maxx = xb.x;
-		miny = maxy = xb.y;
-		minz = maxz = xb.z;
+		bbox_min = bbox_max = xb;
 
-		in.begin();
-		while ( in.next(in_mat) ) {
+		in.begin(t);
+		while ( in.next(t, in_mat) ) {
 			for (unsigned i=0; i<8; i++ ){
 				vec4 xb = mat4_mul(in_mat, mesh->bbox[i]);
-				minx = std::min(xb.x, minx);    maxx = std::max(xb.x, maxx);
-				miny = std::min(xb.y, miny);    maxy = std::max(xb.y, maxy);
-				minz = std::min(xb.z, minz);    maxz = std::max(xb.z, maxz);
+				bbox_min = vmin(bbox_min, xb);
+				bbox_max = vmax(bbox_max, xb);
 			}
 		}
 
-//		cout << "min:" << vec3(minx, miny, minz) << endl;
-//		cout << "max:" << vec3(maxx, maxy, maxz) << endl;
+		float& minx = bbox_min.x;
+		float& miny = bbox_min.y;
+		float& minz = bbox_min.z;
+		float& maxx = bbox_max.x;
+		float& maxy = bbox_max.y;
+		float& maxz = bbox_max.z;
+
+		/*
+		vec4 centered = -(bbox_min + (bbox_max - bbox_min) / vec4(2.0f));
+		ivec4 mask(center_x ? -1 : 0, center_y ? -1 : 0, center_z ? -1 : 0, 0);
+		*/
+
 		// calculate mat4 based on mins and maxs
 		const float move_x = center_x ? -(minx + (maxx - minx) / 2) : 0;
 		float move_y;
@@ -264,13 +282,15 @@ public:
 		xform = mat4_translate({ move_x, move_y, move_z, 1 });
 
 		idx = 0;
-		in.begin();
-		return mat4::ident();
+		in.begin(t);
 	}
 
-	virtual bool next(mat4& m) {
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
+
 		mat4 in_mat;
-		auto alive = in.next(in_mat);
+		auto alive = in.next(t, in_mat);
 		if (alive) {
 //			m = mat4_mul(xform, in_mat);
 			mat4_mul(xform, in_mat, m);
@@ -282,12 +302,13 @@ public:
 	}
 private:
 	Meshy& in;
-	int idx;
 	const bool center_x;
 	const bool center_y;
 	const bool center_z;
 	const bool y_on_floor;
-	mat4 xform;
+
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
 };
 
 #endif //__MESH_H

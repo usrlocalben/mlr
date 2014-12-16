@@ -22,7 +22,6 @@ __forceinline unsigned add_one_and_wrap(const unsigned val, const unsigned max)
 	return next == max ? 0 : next;
 }
 
-
 void Binner::reset(const int width, const int height)
 {
 	if (device_width != width  || device_height != height) {
@@ -101,7 +100,25 @@ void Binner::unsort() {
 }
 
 
-void Pipeline::addFace(const Face& fsrc)
+
+Pipeline::Pipeline(const int threads)
+	:threads(threads)
+{
+	pipes.clear();
+	for (int i = 0; i < threads; i++) {
+		pipes.push_back(Pipedata(i, threads));
+	}
+}
+
+Pipedata::Pipedata(const int thread_number, const int thread_count)
+	:thread_number(thread_number), thread_count(thread_count)
+{
+//	reset(0,0);
+}
+
+
+
+void Pipedata::addFace(const Face& fsrc)
 {
 	const int vidx1 = fsrc.ivp[0] + vbase;
 	const int vidx2 = fsrc.ivp[1] + vbase;
@@ -204,7 +221,8 @@ void Pipeline::addFace(const Face& fsrc)
 
 }
 
-__forceinline void Pipeline::addVertex(const vec4& src, const mat4& m)
+
+__forceinline void Pipedata::addVertex(const Viewport * const vp, const vec4& src, const mat4& m)
 {
 	PVertex pv;
 	pv.p = mat4_mul(m, src);
@@ -222,19 +240,22 @@ __forceinline void Pipeline::addVertex(const vec4& src, const mat4& m)
 	new_vcnt++;
 }
 
-void Pipeline::addNormal(const vec4& src, const mat4& m)
+
+void Pipedata::addNormal(const vec4& src, const mat4& m)
 {
 	nlst.push_back(mat4_mul(m, src));
 	new_ncnt++;
 }
 
-void Pipeline::addUV(const vec4& src)
+
+void Pipedata::addUV(const vec4& src)
 {
 	tlst.push_back(src);
 	new_tcnt++;
 }
 
-void Pipeline::process_face(const int face_id)
+
+void Pipedata::process_face(const int face_id)
 {
 	Face& f = flst[face_id];
 
@@ -257,57 +278,19 @@ void Pipeline::process_face(const int face_id)
 	binner.insert(p1, p2, p3, face_id);
 }
 
-/*
-void Pipeline::render_tile(const int tile_id)
-{
-	auto tile = bins[tile_id];
 
-	for (auto& fidx : tile.idx) {
-		const Face& f = flst[fidx];
-		//const bool& f_backfacing = backfacing[fidx];
 
-		int i0, i1, i2;
-		if (f.backfacing) {
-			i0 = 2; i1 = 1; i2 = 0;
-		} else {
-			i0 = 0; i1 = 1; i2 = 2;
-		}
-
-		const PVertex& v0 = vlst[f.ivp[i0]];
-		const PVertex& v1 = vlst[f.ivp[i1]];
-		const PVertex& v2 = vlst[f.ivp[i2]];
-
-	}
-}
-*/
-/*
-void Pipeline::addMesh(const MeshInstance& mi)
-{
-	const Mesh& mesh = *mi.mesh;
-	for (auto& item : mi.instances) {
-//		auto to_camera = mat4_mul(item, camera_inverse);
-		auto to_camera = mat4_mul(camera_inverse, item);
-//auto to_camera = mat4_mul(camera, item);
-
-		begin_batch();
-		for (auto& vert : mesh.bvp)
-			addVertex(vert, to_camera);
-		for (auto& uv : mesh.buv)
-			addUV(uv);
-		for (auto& normal : mesh.bpn)
-			addNormal(normal, to_camera);
-//		mark();
-		for (auto& face : mesh.faces)
-			addFace(face);
-		end_batch();
-	}
-}
-*/
-void Pipeline::addMeshy(Meshy& mi)
+void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp)
 {
 	const Mesh& mesh = *mi.mesh;
 
-	for (auto item = mi.begin(); mi.next(item);) {
+	int next_idx = thread_number + root_count;
+	int this_idx = 0;
+	mat4 item;
+	for (mi.begin(thread_number); mi.next(thread_number, item); this_idx++) {
+
+		if (this_idx != next_idx) continue;
+		next_idx += thread_count;
 
 		mat4 to_camera;
 		mat4_mul(camera_inverse, item, to_camera);
@@ -319,69 +302,45 @@ void Pipeline::addMeshy(Meshy& mi)
 
 		begin_batch();
 		for (auto& vert : mesh.bvp)
-			addVertex(vert, to_camera);
+			addVertex(vp, vert, to_camera);
 		for (auto& uv : mesh.buv)
 			addUV(uv);
 		for (auto& normal : mesh.bpn)
 			addNormal(normal, to_camera);
-//		mark();
 		for (auto& face : mesh.faces)
 			addFace(face);
 		end_batch();
+
 	}
 }
 
-void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore)
+
+
+void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, function<void(bool)>& mark)
 {
-	irect wholescreen;
-	wholescreen.x0 = 0;
-	wholescreen.y0 = 0;
-	wholescreen.x1 = vp->width;
-	wholescreen.y1 = vp->height;
+	auto my_thread_id = 0;
+	auto thread_count = 1;
 
-	FlatShader my_shader;
-	my_shader.setColorBuffer(cb);
-	my_shader.setDepthBuffer(db);
-	my_shader.setColor(vec4(1, 0.66, 0.33, 0));
-
-	auto facecnt = int(0);
-
-	for (auto& face : flst) {
-		if (face.backfacing) continue;
-
-		const PVertex& v0 = vlst[face.ivp[0]];
-		const PVertex& v1 = vlst[face.ivp[1]];
-		const PVertex& v2 = vlst[face.ivp[2]];
-
-		Material& mat = materialstore.store[face.mf];
-
-		if (mat.imagename != string("")) {
-			const auto tex = texturestore.find(mat.imagename);
-//			const auto texunit = ts_512i(&tex->b[0]);
-//			auto tex_shader = TextureShader<ts_512i>(texunit);
-
-			const auto texunit = ts_512_mipmap(&tex->b[0]);
-			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
-			tex_shader.setColorBuffer(cb);
-			tex_shader.setDepthBuffer(db);
-			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-			tex_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-			drawTri(wholescreen, v0.f, v1.f, v2.f, tex_shader);
-		} else {
-			my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-			my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-			drawTri(wholescreen, v0.f, v1.f, v2.f, my_shader);
-		}
-		
-//		cout << "v1:" << v0.f << ", v2:" << v1.f << ", v3:" << v2.f << endl;
-
-		facecnt++;
+	auto& pipe = this->pipes[my_thread_id];
+	for (auto& mesh : this->meshlist) {
+		pipe.addMeshy(*mesh, camera_inverse, vp);
 	}
-//	cout << "faces drawn: " << facecnt << endl;
+	mark(true);
+
+	index_bins();
+	mark(true);
+
+	for (auto& idx : bin_index) {
+		for (int ti = 0; ti < threads; ti++) {
+			pipes[ti].render(db, cb, materialstore, texturestore, vp, idx.first);
+			mark(false);
+		}
+	}
 }
 
 
-void Pipeline::render2(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, function<void()>& mark)
+
+void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport * const vp, const int bin_idx)
 {
 	FlatShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -393,52 +352,42 @@ void Pipeline::render2(__m128 * __restrict db, SOAPixel * __restrict cb, Materia
 	wire_shader.setDepthBuffer(db);
 	wire_shader.setColor(vec4(1, 0.66, 0.33, 0));
 
-	auto facecnt = int(0);
+	auto& bin = binner.bins[bin_idx];
+	for (auto& idx : bin.faces) {
+		auto& face = flst[idx];
 
-	binner.sort();
-	mark();
+		if (face.backfacing) continue;
 
-	for (auto& bin : binner.bins) {
+		const PVertex& v0 = vlst[face.ivp[0]];
+		const PVertex& v1 = vlst[face.ivp[1]];
+		const PVertex& v2 = vlst[face.ivp[2]];
 
-		for (auto& idx : bin.faces) {
-			auto& face = flst[idx];
+		Material& mat = materialstore.store[face.mf];
 
-			if (face.backfacing) continue;
+		if (mat.imagename != string("")) {
+			const auto tex = texturestore.find(mat.imagename);
+			//			const auto texunit = ts_512i(&tex->b[0]);
+			//			auto tex_shader = TextureShader<ts_512i>(texunit);
 
-			const PVertex& v0 = vlst[face.ivp[0]];
-			const PVertex& v1 = vlst[face.ivp[1]];
-			const PVertex& v2 = vlst[face.ivp[2]];
+			const auto texunit = ts_512_mipmap(&tex->b[0]);
+			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
+			tex_shader.setColorBuffer(cb);
+			tex_shader.setDepthBuffer(db);
+			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
+			tex_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+			drawTri(bin.rect, v0.f, v1.f, v2.f, tex_shader);
+		}
+		else {
+			my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+			my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+			drawTri(bin.rect, v0.f, v1.f, v2.f, my_shader);
+			/*				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+							wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+							drawTri(bin.rect, v0.f, v1.f, v2.f, wire_shader);*/
+		}
 
-			Material& mat = materialstore.store[face.mf];
+		//		cout << "v1:" << v0.f << ", v2:" << v1.f << ", v3:" << v2.f << endl;
 
-			if (mat.imagename != string("")) {
-				const auto tex = texturestore.find(mat.imagename);
-				//			const auto texunit = ts_512i(&tex->b[0]);
-				//			auto tex_shader = TextureShader<ts_512i>(texunit);
-
-				const auto texunit = ts_512_mipmap(&tex->b[0]);
-				auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
-				tex_shader.setColorBuffer(cb);
-				tex_shader.setDepthBuffer(db);
-				tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-				tex_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-				drawTri(bin.rect, v0.f, v1.f, v2.f, tex_shader);
-			} else {
-				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-				drawTri(bin.rect, v0.f, v1.f, v2.f, my_shader);
-/*				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-				drawTri(bin.rect, v0.f, v1.f, v2.f, wire_shader);*/
-			}
-
-			//		cout << "v1:" << v0.f << ", v2:" << v1.f << ", v3:" << v2.f << endl;
-
-			facecnt++;
-		}//faces
-		mark();
-	}//bins
-
-	binner.unsort();
-//	cout << "faces drawn: " << facecnt << endl;
+	}//faces
 }
+

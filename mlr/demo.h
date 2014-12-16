@@ -6,6 +6,8 @@
 
 #include "PixelToaster.h"
 
+#include "render.h"
+
 class Demo
 {
 public:
@@ -38,6 +40,8 @@ private:
 	class MaterialStore& materialstore;
 
 	class Telemetry& telemetry;
+
+	class Pipeline pipeline;
 
 };
 
