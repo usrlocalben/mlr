@@ -13,14 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="rocket">
+    <Filter Include="libs">
+      <UniqueIdentifier>{12a9ec20-0b7b-42ad-9f19-27935b405d88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\pixeltoaster">
+      <UniqueIdentifier>{14f0eb2e-92f6-47f1-96fb-118c8f82b60c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\rocket">
       <UniqueIdentifier>{c007d9a7-60d5-46c6-baf7-99e94ed5eaf2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gason">
+    <Filter Include="libs\gason">
       <UniqueIdentifier>{efb77859-bc27-4712-81e6-219379e329b1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="pixeltoaster">
-      <UniqueIdentifier>{14f0eb2e-92f6-47f1-96fb-118c8f82b60c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -30,17 +33,14 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="aligned_allocator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="vec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\rocket\data.h">
-      <Filter>rocket</Filter>
+      <Filter>libs\rocket</Filter>
     </ClInclude>
     <ClInclude Include="..\rocket\sync.h">
-      <Filter>rocket</Filter>
+      <Filter>libs\rocket</Filter>
     </ClInclude>
     <ClInclude Include="player.h">
       <Filter>Header Files</Filter>
@@ -49,9 +49,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="picopng.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rocket.h">
@@ -81,9 +78,6 @@
     <ClInclude Include="canvas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ryg_srgb.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -103,22 +97,31 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gason.h">
-      <Filter>gason</Filter>
+      <Filter>libs\gason</Filter>
     </ClInclude>
     <ClInclude Include="PixelToasterWindows.h">
-      <Filter>pixeltoaster</Filter>
+      <Filter>libs\pixeltoaster</Filter>
     </ClInclude>
     <ClInclude Include="PixelToasterConversion.h">
-      <Filter>pixeltoaster</Filter>
+      <Filter>libs\pixeltoaster</Filter>
     </ClInclude>
     <ClInclude Include="PixelToasterCommon.h">
-      <Filter>pixeltoaster</Filter>
+      <Filter>libs\pixeltoaster</Filter>
     </ClInclude>
     <ClInclude Include="PixelToaster.h">
-      <Filter>pixeltoaster</Filter>
+      <Filter>libs\pixeltoaster</Filter>
     </ClInclude>
     <ClInclude Include="meshops.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="aligned_allocator.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="picopng.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="ryg_srgb.h">
+      <Filter>libs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -132,21 +135,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\rocket\data.c">
-      <Filter>rocket</Filter>
+      <Filter>libs\rocket</Filter>
     </ClCompile>
     <ClCompile Include="..\rocket\device.c">
-      <Filter>rocket</Filter>
+      <Filter>libs\rocket</Filter>
     </ClCompile>
     <ClCompile Include="..\rocket\track.c">
-      <Filter>rocket</Filter>
+      <Filter>libs\rocket</Filter>
     </ClCompile>
     <ClCompile Include="player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="boot.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="picopng.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rocket.cpp">
@@ -162,9 +162,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dib24.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="obj.cpp">
@@ -183,10 +180,16 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gason.cpp">
-      <Filter>gason</Filter>
+      <Filter>libs\gason</Filter>
     </ClCompile>
     <ClCompile Include="PixelToaster.cpp">
-      <Filter>pixeltoaster</Filter>
+      <Filter>libs\pixeltoaster</Filter>
+    </ClCompile>
+    <ClCompile Include="picopng.cpp">
+      <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="dib24.cpp">
+      <Filter>libs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
