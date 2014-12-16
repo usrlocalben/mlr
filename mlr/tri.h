@@ -497,7 +497,7 @@ struct ts_512_mipmap {
 		px[3].v = _mm_load_ps((float*)&texdata[offset.w]);
 	}
 
-	__forceinline void sample(const qfloat2& uv, qfloat3& px) const 
+	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
 	{
 		int offset, mip_size, stride;
 		float dux = (uv.v[0].y - uv.v[0].x)*512.0f;
@@ -559,10 +559,9 @@ public:
 	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) {
 		qfloat2 frag_uv = vertex_blend(BP, vert_uv);
 
-		qfloat3 texpx;
+		qfloat4 texpx;
 		texunit.sample(frag_uv, texpx);
-
-		frag_color.set(texpx);
+		frag_color = texpx; // .set(texpx);
 	}
 };
 
