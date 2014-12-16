@@ -153,8 +153,8 @@ public:
 		}
 	}
 private:
-	array<int,16> idx;
-	array<mat4,16> xform;
+	std::array<int,16> idx;
+	std::array<mat4,16> xform;
 };
 
 
@@ -187,8 +187,8 @@ public:
 private:
 	Meshy& in;
 
-	array<mat4,16> xform;
-	array<int,16> idx;
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
 };
 
 class MeshyMultiply : public Meshy {
@@ -235,8 +235,8 @@ private:
 	vec3 translate;
 	vec3 scale;
 
-	array<mat4,16> xform;
-	array<int,16> idx;
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
 };
 
 class MeshyCenter : public Meshy {
@@ -309,8 +309,8 @@ private:
 	const bool center_z;
 	const bool y_on_floor;
 
-	array<mat4,16> xform;
-	array<int,16> idx;
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
 };
 
 #endif //__MESH_H
