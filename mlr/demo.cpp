@@ -1,6 +1,7 @@
 
 #include "stdafx.h"
 
+#include <functional>
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -139,7 +140,7 @@ void Demo::render(
 //	pipeline.addMeshy(*stack[idx]);
 
 	telemetry.mark();
-	function<void()> _mark = bind(&Telemetry::mark2, &telemetry);
+	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
 
 
 	pipeline.render(depthtarget.rawptr(), rendertarget.rawptr(), this->materialstore, this->texturestore, _mark);

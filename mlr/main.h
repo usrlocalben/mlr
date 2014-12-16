@@ -14,7 +14,7 @@ class Telemetry {
 public:
 	void start();
 	void mark();
-	void mark2();
+	void mark2(bool);
 	void inc() { x++; }
 	void end();
 	void print() const;

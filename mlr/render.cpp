@@ -316,7 +316,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 
 
 
-void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, function<void()>& mark)
+void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, function<void(bool)>& mark)
 {
 	auto my_thread_id = 0;
 	auto thread_count = 1;
@@ -325,15 +325,15 @@ void Pipeline::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 	for (auto& mesh : this->meshlist) {
 		pipe.addMeshy(*mesh, camera_inverse, vp);
 	}
-	mark();
+	mark(true);
 
 	index_bins();
-	mark();
+	mark(true);
 
 	for (auto& idx : bin_index) {
 		for (int ti = 0; ti < threads; ti++) {
 			pipes[ti].render(db, cb, materialstore, texturestore, vp, idx.first);
-			mark();
+			mark(false);
 		}
 	}
 }

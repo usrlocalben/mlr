@@ -158,7 +158,7 @@ public:
 		camera = cam;
 		camera_inverse = mat4_inverse(camera);
 	}
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, std::function<void()>& f);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, std::function<void(bool)>& f);
 
 	void index_bins() {
 		bin_index.clear();
