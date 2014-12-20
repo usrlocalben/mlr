@@ -33,7 +33,7 @@ struct Viewport
 
 	__forceinline bool is_visible(const vec4 * const __restrict b) const {
 		int res = 0;
-		for (int fi = 0; fi < 5; fi++) {
+		for (int fi = 0; fi < 6; fi++) {
 			int inside = 0;
 			for (int i = 0; i < 8; i++) {
 				const float dist = frust[fi].distance(b[i]);
