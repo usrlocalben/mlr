@@ -300,4 +300,46 @@ private:
 	std::array<mt_prng, 16> mt;
 };
 
+
+class MeshyMaterial : public Meshy {
+public:
+	MeshyMaterial(Meshy& inmesh, const int matlow, const int mathigh) :Meshy(inmesh.mesh), in(inmesh), matlow(matlow), mathigh(mathigh) {}
+
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
+		idx = 0;
+		in.begin(t);
+	}
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+		mat4 in_mat;
+		auto alive = in.next(t, m);
+		idx++;
+		return alive;
+	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		int& matidx = this->matidx[t];
+		in.fbegin(t);
+		matmod = mathigh - matlow;
+		matidx = (idx % (matmod+1)) + matlow;
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		int& matidx = this->matidx[t];
+		auto alive = in.fnext(t, f);
+		f.mf = matidx;
+		return alive;
+	}
+
+private:
+	Meshy& in;
+	std::array<int,16> idx;
+	std::array<int, 16> fidx;
+	std::array<int, 16> matidx;
+	const int matlow;
+	const int mathigh;
+	int matmod;
+};
+
 #endif //__MESHOPS_H
