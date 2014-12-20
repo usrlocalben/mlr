@@ -125,8 +125,9 @@ void Demo::render(
 
 
 	stack.push_back(make_unique<MeshySet>      (&themesh,               mat4::scale(cubescale)));
-	stack.push_back(make_unique<MeshyScatter>  (*stack[stack.size() - 1], 4000, vec3(500, 100, 100)));
+	stack.push_back(make_unique<MeshyScatter>  (*stack[stack.size()-1], 3000, vec3(500, 100, 100)));
 	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, false));
+	stack.push_back(make_unique<MeshyMultiply> (*stack[stack.size()-1], 2, vec3(500, 0, 0), vec3(0, 0, 0)));
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_x(T*rot_y)));
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(3.14/2)));
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(0,0,(fract(T*mov_x)-0.5)*500))));
