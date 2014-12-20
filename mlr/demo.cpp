@@ -121,6 +121,15 @@ void Demo::render(
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(fract(T*mov_x)*16, fract(T*mov_y)*16, fract(T*mov_z)*16))));
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_x(T*rot_y)));
 	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(T*rot_x)));
+//	pipeline.addMeshy(*stack[stack.size()-1]);
+
+
+	stack.push_back(make_unique<MeshySet>      (&themesh,               mat4::scale(cubescale)));
+	stack.push_back(make_unique<MeshyScatter>  (*stack[stack.size() - 1], 4000, vec3(500, 100, 100)));
+	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, false));
+	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_x(T*rot_y)));
+	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(3.14/2)));
+	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(0,0,(fract(T*mov_x)-0.5)*500))));
 	pipeline.addMeshy(*stack[stack.size()-1]);
 
 	auto tiles = meshstore.find("tiles1.obj");

@@ -3,6 +3,7 @@
 #define __MESHOPS_H
 
 #include "mesh.h"
+#include "../mtwist/mtwist.h"
 
 //local rotate x,y,z
 //scale x,y,z
@@ -200,6 +201,48 @@ private:
 
 	std::array<mat4,16> xform;
 	std::array<int,16> idx;
+};
+
+
+class MeshyScatter : public Meshy {
+public:
+	MeshyScatter(Meshy& inmesh, int many, vec3& position) :Meshy(inmesh.mesh), in(inmesh), many(many), position(position) {}
+
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
+		mt_prng& mt = this->mt[t];
+
+		idx = 0;
+		mt.seed32(345894);
+		in.begin(t);
+	}
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+		mt_prng& mt = this->mt[t];
+
+		if (idx == many) return false;
+
+		mat4 in_mat;
+		auto alive = in.next(t, in_mat);
+		if (!alive) {
+			idx++;
+			if (idx == many) return false;
+			in.begin(t);
+			in.next(t, in_mat);
+		}
+
+		auto this_pos = vec3(mt(), mt(), mt()) * position;
+		mat4_mul(mat4::position(this_pos), in_mat, m);
+		return true;
+	}
+
+private:
+	Meshy& in;
+	int many;
+	vec3 position;
+
+	std::array<int,16> idx;
+	std::array<mt_prng, 16> mt;
 };
 
 #endif //__MESHOPS_H
