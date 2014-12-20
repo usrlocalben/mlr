@@ -112,41 +112,42 @@ void Demo::render(
 //	auto T = double(123459589.34539);
 
 	vector<unique_ptr<Meshy>> stack;
+#define previous_op (*stack[stack.size()-1])
 
-	stack.push_back(make_unique<MeshySet>      (&themesh,               mat4::scale(cubescale)));
-	stack.push_back(make_unique<MeshyMultiply> (*stack[stack.size()-1], 20, vec3(16, 0, 0), vec3(0, 0, 0)));
-	stack.push_back(make_unique<MeshyMultiply> (*stack[stack.size()-1], 20, vec3(0, 16, 0), vec3(0, 0, 0)));
-	stack.push_back(make_unique<MeshyMultiply> (*stack[stack.size()-1], 20, vec3(0, 0, 16), vec3(0, 0, 0)));
-	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, false));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(fract(T*mov_x)*16, fract(T*mov_y)*16, fract(T*mov_z)*16))));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_x(T*rot_y)));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(T*rot_x)));
-//	pipeline.addMeshy(*stack[stack.size()-1]);
+	stack.push_back(make_unique<MeshySet>      (&themesh,    mat4::scale(cubescale)));
+	stack.push_back(make_unique<MeshyMultiply> (previous_op, 20, vec3(16, 0, 0), vec3(0, 0, 0)));
+	stack.push_back(make_unique<MeshyMultiply> (previous_op, 20, vec3(0, 16, 0), vec3(0, 0, 0)));
+	stack.push_back(make_unique<MeshyMultiply> (previous_op, 20, vec3(0, 0, 16), vec3(0, 0, 0)));
+	stack.push_back(make_unique<MeshyCenter>   (previous_op, true, true, true, false));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::position(vec3(fract(T*mov_x)*16, fract(T*mov_y)*16, fract(T*mov_z)*16))));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_x(T*rot_y)));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_y(T*rot_x)));
+//	pipeline.addMeshy(previous_op);
 
 
-	stack.push_back(make_unique<MeshySet>      (&themesh,               mat4::scale(cubescale)));
-	stack.push_back(make_unique<MeshyScatter>  (*stack[stack.size()-1], 3000, vec3(500, 100, 100)));
-	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, false));
-	stack.push_back(make_unique<MeshyMultiply> (*stack[stack.size()-1], 2, vec3(500, 0, 0), vec3(0, 0, 0)));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_x(T*rot_y)));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(3.14/2)));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(0,0,(fract(T*mov_x)-0.5)*500))));
-	pipeline.addMeshy(*stack[stack.size()-1]);
+	stack.push_back(make_unique<MeshySet>      (&themesh,    mat4::scale(cubescale)));
+	stack.push_back(make_unique<MeshyScatter>  (previous_op, 3000, vec3(500, 200, 200)));
+	stack.push_back(make_unique<MeshyCenter>   (previous_op, false, true, true, false));
+	stack.push_back(make_unique<MeshyMultiply> (previous_op, 3, vec3(500, 0, 0), vec3(0, 0, 0)));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_x(T*rot_y)));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_y(3.14/2)));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::position(vec3(0,0,500+(fract(T*mov_x)-0)*500))));
+	pipeline.addMeshy(previous_op);
 
 	auto tiles = meshstore.find("tiles1.obj");
-	stack.push_back(make_unique<MeshySet>      (&tiles,                 mat4::rotate_x(3.14 / 2.0f)));
-	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, false));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::position(vec3(0, 0, -200))));
-//	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4_rotate_y(gt.time()*0.05f)));
-//	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4_rotate_y(gt.time()*0.05f)));
-//	pipeline.addMeshy(*stack[stack.size()-1]);
+	stack.push_back(make_unique<MeshySet>      (&tiles,      mat4::rotate_x(3.14 / 2.0f)));
+	stack.push_back(make_unique<MeshyCenter>   (previous_op, true, true, true, false));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::position(vec3(0, 0, -200))));
+//	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4_rotate_y(gt.time()*0.05f)));
+//	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4_rotate_y(gt.time()*0.05f)));
+//	pipeline.addMeshy(previous_op);
 
 	auto flame = meshstore.find("flame1.obj");
-	stack.push_back(make_unique<MeshySet>      (&flame,                 mat4::rotate_x(3.14 / 2.0f)));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::scale(vec3(1, 1, cram))));
-	stack.push_back(make_unique<MeshyCenter>   (*stack[stack.size()-1], true, true, true, true));
-	stack.push_back(make_unique<MeshyTranslate>(*stack[stack.size()-1], mat4::rotate_y(T*rot_x)));
-//	pipeline.addMeshy(*stack[stack.size()-1]);
+	stack.push_back(make_unique<MeshySet>      (&flame,      mat4::rotate_x(3.14 / 2.0f)));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::scale(vec3(1, 1, cram))));
+	stack.push_back(make_unique<MeshyCenter>   (previous_op, true, true, true, true));
+	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_y(T*rot_x)));
+//	pipeline.addMeshy(previous_op);
 
 	telemetry.mark();
 	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
