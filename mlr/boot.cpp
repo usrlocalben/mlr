@@ -11,8 +11,7 @@
 
 #include "main.h"
 
-using std::cout;
-using std::endl;
+using namespace std;
 using boost::format;
 
 

@@ -7,9 +7,7 @@
 #include "player.h"
 
 
-using std::string;
-using std::cout;
-using std::endl;
+using namespace std;
 
 
 Rocket::Rocket(const string dataprefix)

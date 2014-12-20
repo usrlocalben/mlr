@@ -5,9 +5,7 @@
 
 #include "player.h"
 
-using std::cout;
-using std::string;
-using std::endl;
+using namespace std;
 
 
 Player::Player(string filename, double bpm, int rows_per_beat)
