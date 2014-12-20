@@ -24,7 +24,8 @@ public:
 		const int target_height,
 		const int target_stride,
 		TrueColorPixel * const __restrict target,
-		const mat4& ui_camera
+		const mat4& ui_camera,
+		const double ui_time
 	);
 
 private:

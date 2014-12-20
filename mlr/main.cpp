@@ -87,9 +87,66 @@ public:
 };
 
 
+class KeyboardCamera {
+public:
+	KeyboardCamera() :camrot({ 0, 0, 0 }), campos({ 0, 0, 0, 1 }), camdir_ahead({ 0, 0, -1, 0 }), camdir_right({ 1, 0, 0, 0 }){}
 
-vec3 camrot(0, 0, 0);
-vec3 campos(0, 10, 10);
+	void on_w() { campos += camdir_ahead; }
+	void on_s() { campos -= camdir_ahead; }
+	void on_a() { campos -= camdir_right; }
+	void on_d() { campos += camdir_right; }
+	void on_q() { campos -= vec4(0, 0, 1, 0); }
+	void on_e() { campos += vec4(0, 0, 1, 0); }
+
+	void rot_x(const float a) { camrot += vec3(a, 0, 0); }
+	void rot_y(const float a) { camrot += vec3(0, a, 0); }
+	void rot_z(const float a) { camrot += vec3(0, 0, a); }
+
+	void update() {
+		mat4 camera_rot = mat4_mul(mat4::rotate_x(-camrot.x), mat4_mul(mat4::rotate_y(camrot.y), mat4::rotate_z(camrot.z)));
+		camdir_ahead = mat4_mul(camera_rot, vec4(0, 0, -1, 0));
+		camdir_right = mat4_mul(camera_rot, vec4(1, 0, 0, 0));
+		camera_matrix = mat4_mul(mat4::position(campos), camera_rot);
+	}
+
+	mat4 camera_matrix;
+
+private:
+	vec3 camrot;
+	vec4 campos;
+	vec4 camdir_ahead;
+	vec4 camdir_right;
+};
+
+class WallClock {
+public:
+	WallClock() :paused(false) {}
+	double read() {
+		if (paused) {
+			return pause_time;
+		} else {
+			return t.time();
+		}
+	}
+	void set_pause(bool should_pause) {
+		if (should_pause) {
+			pause_time = t.time();
+			paused = true;
+		} else {
+			paused = false;
+		}
+	}
+	void toggle() {
+		set_pause(!paused);
+	}
+private:
+	Timer t;
+	bool paused;
+	double pause_time;
+};
+
+KeyboardCamera mastercamera;
+WallClock masterclock;
 
 
 
@@ -180,9 +237,8 @@ SAMPLE(subtimer,ax_framestart);
 			if (!ob) break;
 			//ob += ((480 - 360) >> 1) * 640;
 
-			mat4 camera;
-			camera = mat4_mul(mat4::position(campos), mat4::rotate_x(camrot.x));
-			demo.render(render_width, render_height, render_width, ob, camera);
+			mastercamera.update();
+			demo.render(render_width, render_height, render_width, ob, mastercamera.camera_matrix, masterclock.read());
 
 			{
 				stringstream ss;
@@ -211,19 +267,27 @@ bool Application::defaultKeyHandlers() {
 	return false;
 }
 
-void Application::onKeyPressed(DisplayInterface& display, Key key) {
-	     if (key == Key::W) { campos += vec3(0, 0, -1); }
+/*	     if (key == Key::W) { campos += vec3(0, 0, -1); }
 	else if (key == Key::S) { campos -= vec3(0, 0, -1); }
 	else if (key == Key::A) { campos -= vec3(1, 0, 0); }
 	else if (key == Key::D) { campos += vec3(1, 0, 0); }
 	else if (key == Key::E) { campos += vec3(0, 1, 0); }
 	else if (key == Key::Q) { campos -= vec3(0, 1, 0); }
-	else if (key == Key::U) { camrot += vec3(0.1, 0, 0); }
-	else if (key == Key::J) { camrot -= vec3(0.1, 0, 0); }
-	else if (key == Key::H) { camrot += vec3(0, 0.1, 0); }
-	else if (key == Key::K) { camrot -= vec3(0, 0.1, 0); }
-	else if (key == Key::Y) { camrot += vec3(0, 0, 0.1); }
-	else if (key == Key::I) { camrot -= vec3(0, 0, 0.1); }
+	*/
+void Application::onKeyPressed(DisplayInterface& display, Key key) {
+	     if (key == Key::W) { mastercamera.on_w(); }
+    else if (key == Key::S) { mastercamera.on_s(); }
+    else if (key == Key::A) { mastercamera.on_a(); }
+    else if (key == Key::D) { mastercamera.on_d(); }
+    else if (key == Key::Q) { mastercamera.on_q(); }
+    else if (key == Key::E) { mastercamera.on_e(); }
+	else if (key == Key::U) { mastercamera.rot_x( 0.1); }
+	else if (key == Key::J) { mastercamera.rot_x(-0.1); }
+	else if (key == Key::H) { mastercamera.rot_y( 0.1); }
+	else if (key == Key::K) { mastercamera.rot_y(-0.1); }
+	else if (key == Key::Y) { mastercamera.rot_z( 0.1); }
+	else if (key == Key::I) { mastercamera.rot_z(-0.1); }
+	else if (key == Key::P) { masterclock.toggle(); }
 }
 
 void Application::onKeyDown(DisplayInterface& display, Key key) {

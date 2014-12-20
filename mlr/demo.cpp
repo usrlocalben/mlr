@@ -74,7 +74,8 @@ void Demo::render(
 	const int target_height,
 	const int target_stride,
 	TrueColorPixel * const __restrict target,
-	const mat4& ui_camera
+	const mat4& ui_camera,
+	const double ui_time
 )
 {
 	if (target_width != config_width || target_height != config_height)
@@ -108,7 +109,7 @@ void Demo::render(
 	//auto themesh = meshstore.find_by_name("textest1.obj");
 	auto themesh = meshstore.find("cube1x1.obj");
 
-	auto T = gt.time();
+	auto T = ui_time; // gt.time();
 //	auto T = double(123459589.34539);
 
 	vector<unique_ptr<Meshy>> stack;
