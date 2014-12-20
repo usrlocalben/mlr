@@ -117,7 +117,7 @@
     <ClInclude Include="ryg_srgb.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="fragment.h">
+    <ClInclude Include="meshops.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vec_soa.h">
