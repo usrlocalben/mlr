@@ -283,7 +283,7 @@ SAMPLE(subtimer,ax_framestart);
 			//ob += ((480 - 360) >> 1) * 640;
 
 			mat4 camera;
-			camera = mat4_mul(mat4_translate(campos), mat4_rotate_x(camrot.x));
+			camera = mat4_mul(mat4::position(campos), mat4::rotate_x(camrot.x));
 			demo.render(render_width, render_height, render_width, ob, camera);
 
 			{

@@ -267,7 +267,7 @@ mat4 mat4_look_from_towards(const vec4& from, const vec4& towards)
 		, dir.x, dir.y, dir.z, 0
 		, 0, 0, 0, 1);
 
-	mat4 mpos = mat4_translate(vec3(-from.x, -from.y, -from.z));
+	mat4 mpos = mat4::position(vec3(-from.x, -from.y, -from.z));
 
 	return mat4_mul(mrot, mpos);
 }

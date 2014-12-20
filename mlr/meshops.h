@@ -108,8 +108,8 @@ public:
 	}
 
 	__forceinline void calc(const int idx, mat4& xform) {
-		mat4 tr = mat4_translate(translate*vec3(float(idx)));
-		mat4 sc = mat4_scale(vec3(1.0f) + scale*vec3(float(idx)));
+		mat4 tr = mat4::position(translate*vec3(float(idx)));
+		mat4 sc = mat4::scale(vec3(1.0f) + scale*vec3(float(idx)));
 		mat4_mul(tr, sc, xform);
 	}
 private:
@@ -170,7 +170,7 @@ public:
 		const float move_z = center_z ? -(minz + (maxz - minz) / 2) : 0;
 //		cout << "move:" << vec3(move_x, move_y, move_z) << endl;
 
-		xform = mat4_translate({ move_x, move_y, move_z, 1 });
+		xform = mat4::position({ move_x, move_y, move_z, 1 });
 
 		idx = 0;
 		in.begin(t);

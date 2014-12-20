@@ -604,6 +604,51 @@ __declspec(align(16)) struct mat4 {
 					vec4(0, 0, 0, 1).v);
 	}
 
+	static __forceinline mat4 scale(const vec3& a) {
+		return mat4(vec4(a.x,   0,   0,  0).v,
+					vec4(  0, a.y,   0,  0).v,
+					vec4(  0,   0, a.z,  0).v,
+					vec4(  0,   0,   0,  1).v);
+	}
+
+	static __forceinline mat4 position(const vec4& a) {
+		return mat4(vec4(1, 0, 0, 0).v,
+					vec4(0, 1, 0, 0).v,
+					vec4(0, 0, 1, 0).v,
+					a.v);
+	}
+
+	static __forceinline mat4 position(const vec3& a) {
+		return mat4::position(vec4(a.x, a.y, a.z, 1));
+	}
+
+	static __forceinline mat4 rotate_x(const float theta) {
+		const float s_t = sin(theta);
+		const float c_t = cos(theta);
+		return mat4(vec4(  1,  0,   0,   0).v,
+		            vec4(  0, c_t, s_t,  0).v,
+		            vec4(  0,-s_t, c_t,  0).v,
+		            vec4(  0,  0,   0,   1).v);
+	}
+
+	static __forceinline mat4 rotate_y(const float theta) {
+		const float s_t = sin(theta);
+		const float c_t = cos(theta);
+		return mat4(vec4(c_t, 0,-s_t, 0).v,
+		            vec4( 0,  1,  0,  0).v,
+		            vec4(s_t, 0, c_t, 0).v,
+		            vec4( 0,  0,  0,  1).v);
+	}
+
+	static __forceinline mat4 rotate_z(const float theta) {
+		const float s_t = sin(theta);
+		const float c_t = cos(theta);
+		return mat4(vec4( c_t, s_t,  0,  0).v,
+		            vec4(-s_t, c_t,  0,  0).v,
+		            vec4(  0,   0,   1,  0).v,
+		            vec4(  0,   0,   0,  1).v);
+	}
+
 	union {
 		__m128 v[4];
 		mvec4 f[4];
@@ -640,23 +685,6 @@ void mat4_print(mat4& r);
 
 //void mat4_mul(mat4& r, const mat4& a, const mat4& b);
 
-__forceinline mat4 mat4_scale(const vec3& a) {
-	return mat4(vec4(a.x,   0,   0,  0).v,
-		        vec4(  0, a.y,   0,  0).v,
-				vec4(  0,   0, a.z,  0).v,
-				vec4(  0,   0,   0,  1).v);
-}
-
-__forceinline mat4 mat4_translate(const vec4& a) {
-	return mat4(vec4(1, 0, 0, 0).v,
-		        vec4(0, 1, 0, 0).v,
-				vec4(0, 0, 1, 0).v,
-				a.v);
-}
-
-__forceinline mat4 mat4_translate(const vec3& a) {
-	return mat4_translate(vec4(a.x, a.y, a.z, 1));
-}
 
 
 //mat4 mat4_mul(const mat4& a, const mat4& b);
@@ -706,26 +734,6 @@ __forceinline mat4 mat4_mul(const mat4& a, const mat4& b)
 }
 */
 
-__forceinline mat4 mat4_rotate_x(const float theta)
-{
-	const float s_t = sin(theta);
-	const float c_t = cos(theta);
-	return mat4(vec4(1, 0, 0, 0).v, vec4(0, c_t, s_t, 0).v, vec4(0, -s_t, c_t, 0).v, vec4(0, 0, 0, 1).v);
-}
-
-__forceinline mat4 mat4_rotate_y(const float theta)
-{
-	const float s_t = sin(theta);
-	const float c_t = cos(theta);
-	return mat4(vec4(c_t, 0, -s_t, 0).v, vec4(0, 1, 0, 0).v, vec4(s_t, 0, c_t, 0).v, vec4(0, 0, 0, 1).v);
-}
-
-__forceinline mat4 mat4_rotate_z(const float theta)
-{
-	const float s_t = sin(theta);
-	const float c_t = cos(theta);
-	return mat4(vec4(c_t, s_t, 0, 0).v, vec4(-s_t, c_t, 0, 0).v, vec4(0, 0, 1, 0).v, vec4(0, 0, 0, 1).v);
-}
 
 
 /*
@@ -1292,14 +1300,14 @@ public:
 //	__forceinline void ident() {
 //		stack[sp] = mat4::ident();
 //	}
-	__forceinline MatrixStack& translate(const vec4& a) { return this->push(mat4_translate(a)); }
-	__forceinline MatrixStack& translate(const vec3& a) { return this->push(mat4_translate(a)); }
+	__forceinline MatrixStack& position(const vec4& a) { return this->push(mat4::position(a)); }
+	__forceinline MatrixStack& position(const vec3& a) { return this->push(mat4::position(a)); }
 
-	__forceinline MatrixStack& scale(const vec3& a) { return this->push(mat4_scale(a)); }
+	__forceinline MatrixStack& scale(const vec3& a) { return this->push(mat4::scale(a)); }
 
-	__forceinline MatrixStack& rotate_x(const float theta) { return this->push(mat4_rotate_x(theta)); }
-	__forceinline MatrixStack& rotate_y(const float theta) { return this->push(mat4_rotate_y(theta)); }
-	__forceinline MatrixStack& rotate_z(const float theta) { return this->push(mat4_rotate_z(theta)); }
+	__forceinline MatrixStack& rotate_x(const float theta) { return this->push(mat4::rotate_x(theta)); }
+	__forceinline MatrixStack& rotate_y(const float theta) { return this->push(mat4::rotate_y(theta)); }
+	__forceinline MatrixStack& rotate_z(const float theta) { return this->push(mat4::rotate_z(theta)); }
 
 };
 
