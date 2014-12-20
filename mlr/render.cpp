@@ -308,8 +308,14 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 			addUV(uv);
 		for (auto& normal : mesh.bpn)
 			addNormal(normal, to_camera);
-		for (auto& face : mesh.faces)
+
+		Face face;
+		mi.fbegin(thread_number);
+		for (; mi.fnext(thread_number, face); ) {
 			addFace(face);
+		}
+//		for (auto& face : mesh.faces)
+//			addFace(face);
 		end_batch();
 
 	}

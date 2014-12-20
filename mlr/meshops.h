@@ -17,6 +17,8 @@ public:
 	Meshy(const Mesh * const mesh) : mesh(mesh) {}
 	virtual void begin(const int t) = 0;
 	virtual bool next(const int t, mat4& m) = 0;
+	virtual void fbegin(const int t) = 0;
+	virtual bool fnext(const int t, struct Face& face) = 0;
 	__forceinline void* operator new[]   (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void* operator new     (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void  operator delete[](void*  x) { if (x) _aligned_free(x); }
@@ -41,8 +43,25 @@ public:
 			return false;
 		}
 	}
+	virtual void fbegin(const int t) {
+		int& fidx = this->fidx[t];
+		int& idx = this->idx[t];
+		fidx = 0;
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& fidx = this->fidx[t];
+		int& idx = this->idx[t];
+		if (fidx < mesh->faces.size()) {
+			f = mesh->faces[fidx];
+			fidx++;
+			return true;
+		} else {
+			return false;
+		}
+	}
 private:
 	std::array<int,16> idx;
+	std::array<int, 16> fidx;
 	mat4 xform;
 };
 
@@ -69,11 +88,20 @@ public:
 			return false;
 		}
 	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		return in.fnext(t, f);
+	}
 
 private:
 	Meshy& in;
 	mat4 xform;
 	std::array<int,16> idx;
+	std::array<int, 16> fidx;
 };
 
 class MeshyMultiply : public Meshy {
@@ -107,6 +135,14 @@ public:
 		mat4_mul(xform, in_mat, m);
 		return true;
 	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		return in.fnext(t, f);
+	}
 
 	__forceinline void calc(const int idx, mat4& xform) {
 		mat4 tr = mat4::position(translate*vec3(float(idx)));
@@ -121,6 +157,7 @@ private:
 
 	std::array<mat4,16> xform;
 	std::array<int,16> idx;
+	std::array<int, 16> fidx;
 };
 
 class MeshyCenter : public Meshy {
@@ -192,6 +229,14 @@ public:
 			return false;
 		}
 	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		return in.fnext(t, f);
+	}
 private:
 	Meshy& in;
 	const bool center_x;
@@ -201,6 +246,7 @@ private:
 
 	std::array<mat4,16> xform;
 	std::array<int,16> idx;
+	std::array<int, 16> fidx;
 };
 
 
@@ -235,6 +281,14 @@ public:
 		mat4_mul(mat4::position(this_pos), in_mat, m);
 		return true;
 	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		return in.fnext(t, f);
+	}
 
 private:
 	Meshy& in;
@@ -242,6 +296,7 @@ private:
 	vec3 position;
 
 	std::array<int,16> idx;
+	std::array<int, 16> fidx;
 	std::array<mt_prng, 16> mt;
 };
 
