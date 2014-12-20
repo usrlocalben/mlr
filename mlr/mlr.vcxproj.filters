@@ -123,6 +123,9 @@
     <ClInclude Include="vec_soa.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jsonfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -190,6 +193,9 @@
     </ClCompile>
     <ClCompile Include="dib24.cpp">
       <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="jsonfile.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

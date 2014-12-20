@@ -89,6 +89,7 @@
     <ClInclude Include="demo.h" />
     <ClInclude Include="dib24.h" />
     <ClInclude Include="gason.h" />
+    <ClInclude Include="jsonfile.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="meshops.h" />
@@ -132,6 +133,7 @@
     <ClCompile Include="dib24.cpp" />
     <ClCompile Include="gason.cpp" />
     <ClCompile Include="boot.cpp" />
+    <ClCompile Include="jsonfile.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="obj.cpp" />

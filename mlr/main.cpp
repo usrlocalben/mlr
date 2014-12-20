@@ -1,8 +1,6 @@
 
 #include "stdafx.h"
 
-#include <fstream>
-#include <iostream>
 #include <sstream>
 #include <vector>
 #include <thread>
@@ -15,7 +13,6 @@
 #include "aligned_allocator.h"
 #include "PixelToaster.h"
 #include "picopng.h"
-#include "gason.h"
 
 #include "vec.h"
 #include "obj.h"
@@ -26,6 +23,7 @@
 #include "player.h"
 #include "rocket.h"
 #include "profont.h"
+#include "jsonfile.h"
 #include "viewport.h"
 #include "texture.h"
 
@@ -104,106 +102,6 @@ Application::Application()
 	 fullscreen(false)
 {}
 
-
-vector<char> file_get_contents(const string& fn) {
-	vector<char> buf;
-	ifstream f(fn);
-	f.exceptions(ifstream::badbit | ifstream::failbit | ifstream::eofbit);
-	f.seekg(0, ios::end);
-	streampos length(f.tellg());
-	if (length){
-		f.seekg(0, ios::beg);
-		buf.resize(static_cast<size_t>(length));
-		f.read(&buf.front(), static_cast<std::size_t>(length));
-	}
-	return buf;
-}
-
-void file_get_contents(const string& fn, vector<char>& buf) {
-	ifstream f(fn);
-	f.exceptions(ifstream::badbit | ifstream::failbit | ifstream::eofbit);
-	f.seekg(0, ios::end);
-	streampos length(f.tellg());
-	if (length){
-		f.seekg(0, ios::beg);
-		buf.resize(static_cast<size_t>(length));
-		f.read(&buf.front(), static_cast<std::size_t>(length));
-	}
-}
-
-class JsonWalker {
-public:
-	JsonWalker(const JsonValue * const jv) : jv(jv) {}
-
-	JsonWalker get(const string& key) {
-		for (const auto& item : *jv) {
-			if (key == item->key) {
-				return JsonWalker(&item->value);
-			}
-		}
-//		return nullptr;
-	}
-	char* toString() const { return jv->toString(); }
-	double toNumber() const { return jv->toNumber(); }
-	int toInt() const { return static_cast<int>(jv->toNumber()); }
-	bool toBool() const { return jv->getTag() == JSON_TRUE; }
-
-private:
-	const JsonValue * const jv;
-};
-
-class JsonFile {
-public:
-	JsonFile(const string& fn) {
-		serial = 0;
-		filename = fn;
-		last_mtime = getmtime();
-		reload();
-	}
-	void maybe_reload() {
-		long long mtime_now = getmtime();
-		if (mtime_now != last_mtime) {
-			last_mtime = mtime_now;
-			reload();
-		}
-	}
-
-	JsonWalker root() {
-		return JsonWalker(jsonroot.get());
-	}
-
-private:
-	void reload() {
-
-		jsonroot = make_unique<JsonValue>();
-		allocator = make_unique<JsonAllocator>();
-		rawdata.clear();
-
-		file_get_contents(filename, rawdata);
-		rawdata.push_back(0);
-		char *source = &rawdata[0];
-		char *endptr;
-
-		int status = jsonParse(source, &endptr, jsonroot.get(), *allocator.get());
-		if (status != JSON_OK) {
-			cerr << jsonStrError(status) << " at " << endptr - source << endl;
-			_getch();
-		}
-		serial++;
-	}
-
-	long long getmtime() const {
-		return ::getmtime(filename);
-	}
-
-private:
-	int serial;
-	long long last_mtime;
-	string filename;
-	vector<char> rawdata;
-	unique_ptr<JsonValue> jsonroot;
-	unique_ptr<JsonAllocator> allocator;
-};
 
 
 

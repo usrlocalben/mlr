@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <codecvt>
+#include <fstream>
 
 #include <Windows.h>
 
@@ -71,3 +72,29 @@ long long getmtime(const string& fn) {
 	return mtime;
 }
 
+
+vector<char> file_get_contents(const string& fn) {
+	vector<char> buf;
+	ifstream f(fn);
+	f.exceptions(ifstream::badbit | ifstream::failbit | ifstream::eofbit);
+	f.seekg(0, ios::end);
+	streampos length(f.tellg());
+	if (length){
+		f.seekg(0, ios::beg);
+		buf.resize(static_cast<size_t>(length));
+		f.read(&buf.front(), static_cast<std::size_t>(length));
+	}
+	return buf;
+}
+
+void file_get_contents(const string& fn, vector<char>& buf) {
+	ifstream f(fn);
+	f.exceptions(ifstream::badbit | ifstream::failbit | ifstream::eofbit);
+	f.seekg(0, ios::end);
+	streampos length(f.tellg());
+	if (length){
+		f.seekg(0, ios::beg);
+		buf.resize(static_cast<size_t>(length));
+		f.read(&buf.front(), static_cast<std::size_t>(length));
+	}
+}

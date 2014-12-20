@@ -4,10 +4,16 @@
 
 #include "stdafx.h"
 
+#include <string>
+#include <vector>
+
 std::wstring s2ws(const std::string& str);
 std::string ws2s(const std::wstring& wstr);
 std::vector<std::string> fileglob(const std::string& pathpat);
 std::vector<std::string> explode(const std::string& str, char ch);
 long long getmtime(const std::string& fn);
+
+std::vector<char> file_get_contents(const std::string& fn);
+void file_get_contents(const std::string& fn, std::vector<char>& buf);
 
 #endif //__UTILS_H
