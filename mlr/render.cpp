@@ -390,12 +390,15 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			drawTri(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
-			my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-			my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-			drawTri(bin.rect, v0.f, v1.f, v2.f, my_shader);
-			/*				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-							wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-							drawTri(bin.rect, v0.f, v1.f, v2.f, wire_shader);*/
+			if (1) { //face.mf<26) {
+				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+				drawTri(bin.rect, v0.f, v1.f, v2.f, my_shader);
+			} else {
+				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+				drawTri(bin.rect, v0.f, v1.f, v2.f, wire_shader);
+			}
 		}
 
 		//		cout << "v1:" << v0.f << ", v2:" << v1.f << ", v3:" << v2.f << endl;
