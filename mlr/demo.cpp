@@ -46,6 +46,7 @@ inline static float frandom() {
 	return static_cast<float>(random());
 }
 
+int matlow, mathigh;
 
 Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, MaterialStore& materialstore, Telemetry& telemetry) :
 	config_width(0),
@@ -62,6 +63,16 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	for (int i = 0; i < 64; i++) {
 		colorpack.push_back(vec4(frandom(), frandom(), frandom(), 0));
 	}
+
+	matlow = materialstore.store.size();
+	for (int i = 0; i < 3; i++) {
+		Material m;
+		m.imagename = "";
+		float intensity = frandom() * 128;
+		m.kd = vec3(frandom(), frandom(), frandom()) * vec3(intensity);
+		materialstore.store.push_back(m);
+	}
+	mathigh = materialstore.store.size()-1;
 }
 
 Demo::~Demo()
@@ -127,12 +138,13 @@ void Demo::render(
 
 
 	stack.push_back(make_unique<MeshySet>      (&themesh,    mat4::scale(cubescale)));
-	stack.push_back(make_unique<MeshyScatter>  (previous_op, 3000, vec3(500, 200, 200)));
+	stack.push_back(make_unique<MeshyScatter>  (previous_op, 2000, vec3(500, cram, narb))); // narb, cram, 200)));
 	stack.push_back(make_unique<MeshyCenter>   (previous_op, false, true, true, false));
 	stack.push_back(make_unique<MeshyMultiply> (previous_op, 3, vec3(500, 0, 0), vec3(0, 0, 0)));
 	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_x(T*rot_y)));
 	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_y(3.14/2)));
 	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::position(vec3(0,0,500+(fract(T*mov_x)-0)*500))));
+	stack.push_back(make_unique<MeshyMaterial> (previous_op, matlow, mathigh));
 	pipeline.addMeshy(previous_op);
 
 	auto tiles = meshstore.find("tiles1.obj");
