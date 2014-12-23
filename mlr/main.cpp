@@ -136,6 +136,9 @@ public:
 			paused = false;
 		}
 	}
+	void set_pause_time(double t) {
+		pause_time = t;
+	}
 	void toggle() {
 		set_pause(!paused);
 	}
@@ -193,6 +196,11 @@ int Application::run(const bool started_from_gui) {
 		render_width = jsonfile.root().get("render_size").get("x").toInt();
 		render_height = jsonfile.root().get("render_size").get("y").toInt();
 		fullscreen = jsonfile.root().get("start_in_fullscreen").toBool();
+
+		if (jsonfile.root().get("start_paused").toBool()) {
+			masterclock.set_pause(true);
+			masterclock.set_pause_time(1000);
+		}
 	}
 
 	if (hackmode_enable) device_height = 360;
