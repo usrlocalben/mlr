@@ -101,10 +101,10 @@ Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, con
 	md = mat4_mul(md_origin, mat4_mul(md_scale, md_yfix));
 
 	frust[0] = Plane::from_origin({ mp.f[0][3] + mp.f[0][0], mp.f[1][3] + mp.f[1][0], mp.f[2][3] + mp.f[2][0], mp.f[3][3] + mp.f[3][0] });	// left		(facing right)
-	frust[1] = Plane::from_origin({ mp.f[0][3] - mp.f[0][0], mp.f[1][3] - mp.f[1][0], mp.f[2][3] - mp.f[2][0], mp.f[3][3] - mp.f[3][0] });	// right	(facing left)
-	frust[2] = Plane::from_origin({ mp.f[0][3] + mp.f[0][1], mp.f[1][3] + mp.f[1][1], mp.f[2][3] + mp.f[2][1], mp.f[3][3] + mp.f[3][1] });	// bottom	(facing up)
-	frust[3] = Plane::from_origin({ mp.f[0][3] - mp.f[0][1], mp.f[1][3] - mp.f[1][1], mp.f[2][3] - mp.f[2][1], mp.f[3][3] - mp.f[3][1] });	// top		(facing down)
-	frust[4] = Plane::from_origin({ mp.f[0][3] + mp.f[0][2], mp.f[1][3] + mp.f[1][2], mp.f[2][3] + mp.f[2][2], mp.f[3][3] + mp.f[3][2] });	// front	(facing back)
+	frust[1] = Plane::from_origin({ mp.f[0][3] + mp.f[0][1], mp.f[1][3] + mp.f[1][1], mp.f[2][3] + mp.f[2][1], mp.f[3][3] + mp.f[3][1] });	// bottom	(facing up)
+	frust[2] = Plane::from_origin({ mp.f[0][3] + mp.f[0][2], mp.f[1][3] + mp.f[1][2], mp.f[2][3] + mp.f[2][2], mp.f[3][3] + mp.f[3][2] });	// front	(facing back)
+	frust[3] = Plane::from_origin({ mp.f[0][3] - mp.f[0][0], mp.f[1][3] - mp.f[1][0], mp.f[2][3] - mp.f[2][0], mp.f[3][3] - mp.f[3][0] });	// right	(facing left)
+	frust[4] = Plane::from_origin({ mp.f[0][3] - mp.f[0][1], mp.f[1][3] - mp.f[1][1], mp.f[2][3] - mp.f[2][1], mp.f[3][3] - mp.f[3][1] });	// top		(facing down)
 	frust[5] = Plane::from_origin({ mp.f[0][3] - mp.f[0][2], mp.f[1][3] - mp.f[1][2], mp.f[2][3] - mp.f[2][2], mp.f[3][3] - mp.f[3][2] });	// back		(facing front)
 }
 

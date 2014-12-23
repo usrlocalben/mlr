@@ -7,17 +7,16 @@
 #include "vec.h"
 
 const unsigned CLIP_LEFT   = 1 << 0;
-const unsigned CLIP_RIGHT  = 1 << 1;
-const unsigned CLIP_BOTTOM = 1 << 2;
-const unsigned CLIP_TOP    = 1 << 3;
-const unsigned CLIP_NEAR   = 1 << 4;
+const unsigned CLIP_BOTTOM = 1 << 1;
+const unsigned CLIP_NEAR   = 1 << 2;
+const unsigned CLIP_RIGHT  = 1 << 3;
+const unsigned CLIP_TOP    = 1 << 4;
 const unsigned CLIP_FAR    = 1 << 5;
 
 const float GUARDBAND_FACTOR = 2.0f;
-const vec4 GUARDBAND_V(GUARDBAND_FACTOR);
+const vec4 GUARDBAND_WWWW(GUARDBAND_FACTOR, GUARDBAND_FACTOR, 1, 0);
 
-
-std::array<unsigned,5> CLIP_LIST = { CLIP_LEFT, CLIP_RIGHT, CLIP_BOTTOM, CLIP_TOP, CLIP_NEAR };
+std::array<unsigned,5> CLIP_LIST = { CLIP_LEFT, CLIP_BOTTOM, CLIP_NEAR, CLIP_RIGHT, CLIP_TOP }; //CLIP_FAR
 
 
 class Guardband {
@@ -25,35 +24,12 @@ class Guardband {
 public:
 
 static __forceinline unsigned clipPoint(const vec4& p) {
-	const float wscale = p.w * GUARDBAND_FACTOR;
-
-	unsigned cf = 0;
-	if (wscale+p.x < 0) cf |= CLIP_LEFT;
-	if (wscale-p.x < 0) cf |= CLIP_RIGHT;
-	if (wscale+p.y < 0) cf |= CLIP_BOTTOM;
-	if (wscale-p.y < 0) cf |= CLIP_TOP;
-	if (   p.w+p.z < 0) cf |= CLIP_NEAR;
-//	if (   p.w-p.z < 0) cf |= CLIP_FAR;
-	return cf;
+	auto www = GUARDBAND_WWWW * p.wwww(); // guardband vector is (gbf,gbf,1,0)
+	auto lbn_mask = cmple(www+p, vec4::zero()).mask() & 0x7; // left, bottom, near
+	auto rtf_mask = cmple(www-p, vec4::zero()).mask() & 0x3;// right, top, far
+	return lbn_mask | (rtf_mask << 3);
 }
 
-
-	/*
-static __forceinline unsigned clipPoint(const vec4& p) {
-	//const float wscale = p.w * GUARDBAND_FACTOR;
-	auto wscale = p.wwww() * GUARDBAND_V;
-
-	auto gminus = wscale - p;
-	auto gplus = wscale + p;
-	auto plus = p.wwww() + p;
-
-	return (gplus.x < 0) << 0 |
-		(gminus.x < 0) << 1 |
-		(gplus.y < 0) << 2 |
-		(gminus.y < 0) << 3 |
-	       ( plus.z < 0)<<4;
-}
-*/
 
 static __forceinline bool is_inside(const unsigned clipplane, const vec4& p) {
 	const float wscaled = p.w * GUARDBAND_FACTOR;
