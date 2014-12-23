@@ -16,13 +16,13 @@
 
 
 struct PVertex {
+	unsigned cf;
+	vec4 f; // fixed 2d x,y,"z",1overw
 	vec4 p; // eyespace
 	vec4 c; // clipspace
 	vec4 s; // screenspace
-	vec4 f; // fixed 2d x,y,"z",1overw
 
 	vec4 n; // vertex normal
-	unsigned cf;
 };
 
 __forceinline PVertex lerp(const PVertex& a, const PVertex& b, const float t) {
