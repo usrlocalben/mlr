@@ -112,15 +112,13 @@ void Pipedata::addFace(const Face& fsrc)
 	if (pv1.cf & pv2.cf & pv3.cf) return;
 
 	const unsigned required_clipping = pv1.cf | pv2.cf | pv3.cf;
-
 	if (required_clipping == 0) {
-		Face f = fsrc.make_rebased(vbase, tbase, nbase);
-		process_face(f);
+		// all inside
+		process_face(fsrc.make_rebased(vbase, tbase, nbase));
 		return;
 	}
 
-	
-
+	// 	needs clipping
 	unsigned a_vidx[32], b_vidx[32];
 	unsigned a_tidx[32], b_tidx[32];
 	unsigned a_nidx[32], b_nidx[32];
@@ -132,52 +130,50 @@ void Pipedata::addFace(const Face& fsrc)
 	}
 
 
-	for (int cnum = 0; cnum < 5; cnum++) { // XXX set to 6 to enable the far plane
+	for (int clip_plane = 0; clip_plane < 5; clip_plane++) { // XXX set to 6 to enable the far plane
 
-		const int planebit = 1 << cnum;
+		const int planebit = 1 << clip_plane;
 		if (!(required_clipping & planebit)) continue; // skip plane that is ok
 
 		bool we_are_inside;
-		unsigned pi = 0;
+		unsigned this_pi = 0;
 		unsigned b_cnt = 0;
 
-		while (1) {
-			// select the next point, wrap if needed
-			const auto next_pi = (pi + 1) % a_cnt;
+		do {
+			const auto next_pi = (this_pi + 1) % a_cnt; // wrap
 
-			const auto& cv = vlst[a_vidx[pi]];
-			const auto& ct = tlst[a_tidx[pi]];
-			const auto& cn = nlst[a_nidx[pi]];
+			const auto& this_v = vlst[a_vidx[this_pi]];
+			const auto& this_t = tlst[a_tidx[this_pi]];
+			const auto& this_n = nlst[a_nidx[this_pi]];
 
-			const auto& nv = vlst[a_vidx[next_pi]];
-			const auto& nt = tlst[a_tidx[next_pi]];
-			const auto& nn = nlst[a_nidx[next_pi]];
+			const auto& next_v = vlst[a_vidx[next_pi]];
+			const auto& next_t = tlst[a_tidx[next_pi]];
+			const auto& next_n = nlst[a_nidx[next_pi]];
 
-			if (pi == 0) {
-				we_are_inside = Guardband::is_inside(planebit, cv.c);
+			if (this_pi == 0) {
+				we_are_inside = Guardband::is_inside(planebit, this_v.c);
 			}
-			const bool next_is_inside = Guardband::is_inside(planebit, nv.c);
+			const bool next_is_inside = Guardband::is_inside(planebit, next_v.c);
 
 			if (we_are_inside) {
-				b_vidx[b_cnt] = a_vidx[pi];
-				b_tidx[b_cnt] = a_tidx[pi];
-				b_nidx[b_cnt] = a_nidx[pi];
+				b_vidx[b_cnt] = a_vidx[this_pi];
+				b_tidx[b_cnt] = a_tidx[this_pi];
+				b_nidx[b_cnt] = a_nidx[this_pi];
 				b_cnt++;
 			}
 
 			if (we_are_inside != next_is_inside) {
 				we_are_inside = !we_are_inside;
 
-				const float t = Guardband::clipLine(planebit, cv.c, nv.c);
-				vlst.push_back(lerp(cv, nv, t));    b_vidx[b_cnt] = vlst.size() - 1;
-				tlst.push_back(lerp(ct, nt, t));    b_tidx[b_cnt] = tlst.size() - 1;
-				nlst.push_back(nlerp(cn, nn, t));    b_nidx[b_cnt] = nlst.size() - 1;
+				const float t = Guardband::clipLine(planebit, this_v.c, next_v.c);
+				vlst.push_back(lerp(this_v, next_v, t));  b_vidx[b_cnt] = vlst.size() - 1;
+				tlst.push_back(lerp(this_t, next_t, t));  b_tidx[b_cnt] = tlst.size() - 1;
+				nlst.push_back(lerp(this_n, next_n, t));  b_nidx[b_cnt] = nlst.size() - 1;
 				b_cnt++;
 			}
 
-			pi = next_pi;
-			if (pi == 0) break;
-		}
+			this_pi = next_pi;
+		} while (this_pi != 0);
 
 		for (unsigned i = 0; i < b_cnt; i++) {
 			a_vidx[i] = b_vidx[i];
