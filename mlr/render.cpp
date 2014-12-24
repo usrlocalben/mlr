@@ -14,14 +14,16 @@
 
 using namespace std;
 
-const int tile_width_in_subtiles = 20;
-const int tile_height_in_subtiles = 12;
+const int tile_width_in_subtiles = 16;
+const int tile_height_in_subtiles = 8;
+
 
 __forceinline unsigned add_one_and_wrap(const unsigned val, const unsigned max)
 {
 	const auto next = val + 1;
 	return next == max ? 0 : next;
 }
+
 
 void Binner::reset(const int width, const int height)
 {
@@ -36,6 +38,7 @@ void Binner::reset(const int width, const int height)
 	}
 }
 
+
 void Binner::onResize()
 {
 	tilewidth = tile_width_in_subtiles * 8;
@@ -44,7 +47,7 @@ void Binner::onResize()
 	device_width_in_tiles = (device_width + tilewidth - 1) / tilewidth;
 	device_height_in_tiles = (device_height + tileheight - 1) / tileheight;
 
-	device_max = ivec4(device_width, device_height, 0, 0);
+	device_max = vec4(device_width, device_height, 0, 0);
 
 	bins.clear();
 	int i = 0;
@@ -60,46 +63,29 @@ void Binner::onResize()
 	}
 }
 
+
 void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& face)
 {
-	/*
 	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
-	auto pmax = vmin(vmax(p1, vmax(p2, p3)), itof(device_max));
+	auto pmax = vmin(vmax(p1, vmax(p2, p3)), device_max);
 
-	const auto x0 = int(pmin.x);
-	const auto y0 = int(pmin.y);
-	const auto x1 = int(pmax.x);
-	const auto y1 = int(pmax.y);
-	*/
+	auto x0 = int(pmin._x());
+	auto y0 = int(pmin._y());
+	auto x1 = int(pmax._x()); // trick: set this to pmin._x()
+	auto y1 = int(pmax._y());
 
-	const int y0 = max((int)min(p1.y, min(p2.y, p3.y)), 0);
-	const int y1 = min((int)max(p1.y, max(p2.y, p3.y)), device_height);
-
-	const int x0 = max((int)min(p1.x, min(p2.x, p3.x)), 0);
-	const int x1 = min((int)max(p1.x, max(p2.x, p3.x)), device_width);
-
-	// compiler doesn't seem smart enough to optimize this out of the for expression??
 	const int ylim = min(y1 / tileheight, device_height_in_tiles - 1);
 	const int xlim = min(x1 / tilewidth, device_width_in_tiles - 1);
-	const int tx0 = x0 / tilewidth;
 
+	const int tx0 = x0 / tilewidth;
 	for (int ty = y0 / tileheight; ty <= ylim; ty++) {
+		int bin_row_offset = ty * device_width_in_tiles;
 		for (int tx = tx0; tx <= xlim; tx++) {
-			auto& bin = bins[ty * device_width_in_tiles + tx];
+			auto& bin = bins[bin_row_offset + tx];
 			bin.faces.push_back(face);
 		}
 	}
 }
-
-void Binner::sort() {
-	std::sort(bins.begin(), bins.end(),
-		[](Tilebin const& a, Tilebin const& b){return a.faces.size() > b.faces.size(); });
-}
-void Binner::unsort() {
-	std::sort(bins.begin(), bins.end(),
-		[](Tilebin const& a, Tilebin const& b){return a.id < b.id; });
-}
-
 
 
 Pipeline::Pipeline(const int threads)
@@ -111,12 +97,12 @@ Pipeline::Pipeline(const int threads)
 	}
 }
 
+
 Pipedata::Pipedata(const int thread_number, const int thread_count)
 	:thread_number(thread_number), thread_count(thread_count)
 {
 //	reset(0,0);
 }
-
 
 
 void Pipedata::addFace(const Face& fsrc)
@@ -278,7 +264,6 @@ void Pipedata::process_face(Face& f)
 }
 
 
-
 void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp)
 {
 	const Mesh& mesh = *mi.mesh;
@@ -402,4 +387,3 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 	}//faces
 }
-

@@ -75,7 +75,7 @@ private:
 	int tileheight;
 	int device_width_in_tiles;
 	int device_height_in_tiles;
-	ivec4 device_max;
+	vec4 device_max;
 };
 
 
