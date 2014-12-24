@@ -18,13 +18,6 @@ const int tile_width_in_subtiles = 16;
 const int tile_height_in_subtiles = 8;
 
 
-__forceinline unsigned add_one_and_wrap(const unsigned val, const unsigned max)
-{
-	const auto next = val + 1;
-	return next == max ? 0 : next;
-}
-
-
 void Binner::reset(const int width, const int height)
 {
 	if (device_width != width  || device_height != height) {
@@ -150,7 +143,7 @@ void Pipedata::addFace(const Face& fsrc)
 
 		while (1) {
 			// select the next point, wrap if needed
-			const auto next_pi = add_one_and_wrap(pi, a_cnt);
+			const auto next_pi = (pi + 1) % a_cnt;
 
 			const auto& cv = vlst[a_vidx[pi]];
 			const auto& ct = tlst[a_tidx[pi]];
