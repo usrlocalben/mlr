@@ -75,7 +75,7 @@ struct Edge {
 
 
 template <typename FRAGMENT_PROCESSOR>
-void drawTri( const irect r, const vec4& s1, const vec4& s2, const vec4& s3, FRAGMENT_PROCESSOR& fp )
+void draw_triangle(const irect& r, const vec4& s1, const vec4& s2, const vec4& s3, FRAGMENT_PROCESSOR& fp)
 {
 	const int x1 = iround(16.0f * s1.x);
 	const int x2 = iround(16.0f * s2.x);

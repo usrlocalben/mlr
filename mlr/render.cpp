@@ -369,17 +369,17 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
 			tex_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-			drawTri(bin.rect, v0.f, v1.f, v2.f, tex_shader);
+			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
 			if (1) { //face.mf<26) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
 				my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-				drawTri(bin.rect, v0.f, v1.f, v2.f, my_shader);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
 				wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
-				drawTri(bin.rect, v0.f, v1.f, v2.f, wire_shader);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
 			}
 		}
 
