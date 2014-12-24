@@ -392,6 +392,11 @@ __declspec(align(16)) struct vec4 {
 	__forceinline vec4 yyww() const { return _mm_movehdup_ps(v); }
 	__forceinline vec4 xxzz() const { return _mm_moveldup_ps(v); }
 
+	__forceinline float _x() const { float a; _mm_store_ss(&a,        v); return a; }
+	__forceinline float _y() const { float a; _mm_store_ss(&a, yyyy().v); return a; }
+	__forceinline float _z() const { float a; _mm_store_ss(&a, zzzz().v); return a; }
+	__forceinline float _w() const { float a; _mm_store_ss(&a, wwww().v); return a; }
+
 	__forceinline unsigned mask() const { return _mm_movemask_ps(v); }
 
 	//__forceinline friend vec4 divw(const vec4& a) {
