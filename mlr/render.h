@@ -52,7 +52,7 @@ __forceinline PVertex lerp(const PVertex& a, const PVertex& b, const float t) {
 struct Tilebin {
 	irect rect;
 	int id;
-	std::vector<int> faces;
+	std::vector<Face> faces;
 	void reset() {
 		faces.clear();
 	}
@@ -61,7 +61,7 @@ struct Tilebin {
 class Binner {
 public:
 	void reset(const int cur_width, const int cur_height);
-	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const int idx);
+	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& face);
 	void sort();
 	void unsort();
 	Binner() :device_height(0), device_width(0) {}
@@ -90,7 +90,6 @@ public:
 		tlst.clear();
 		nlst.clear();
 		llst.clear();
-		flst.clear();
 		batch_in_progress = 0;
 		root_count = 0;
 		binner.reset(width, height);
@@ -119,12 +118,11 @@ private:
 		nbase = nlst.size();
 		batch_in_progress = 0;
 	}
-	void process_face(const int face_id);
+	void process_face(Face& f);
 
 	vectorsse<PVertex> vlst;  unsigned vbase;    int new_vcnt;    int clipbase;
 	vectorsse<vec4> nlst;     unsigned nbase;    int new_ncnt;
 	vectorsse<vec4> tlst;     unsigned tbase;    int new_tcnt;
-	vectorsse<Face> flst;     unsigned fbase;
 	vectorsse<Light> llst;    unsigned lbase;
 	int batch_in_progress;
 	const int thread_number;

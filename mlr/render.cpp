@@ -14,8 +14,8 @@
 
 using namespace std;
 
-const int tile_width_in_subtiles = 6;
-const int tile_height_in_subtiles = 6;
+const int tile_width_in_subtiles = 20;
+const int tile_height_in_subtiles = 12;
 
 __forceinline unsigned add_one_and_wrap(const unsigned val, const unsigned max)
 {
@@ -60,7 +60,7 @@ void Binner::onResize()
 	}
 }
 
-void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const int idx)
+void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& face)
 {
 	/*
 	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
@@ -86,7 +86,7 @@ void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const int id
 	for (int ty = y0 / tileheight; ty <= ylim; ty++) {
 		for (int tx = tx0; tx <= xlim; tx++) {
 			auto& bin = bins[ty * device_width_in_tiles + tx];
-			bin.faces.push_back(idx);
+			bin.faces.push_back(face);
 		}
 	}
 }
@@ -135,8 +135,8 @@ void Pipedata::addFace(const Face& fsrc)
 	const unsigned required_clipping = pv1.cf | pv2.cf | pv3.cf;
 
 	if (required_clipping == 0) {
-		flst.push_back(fsrc.make_rebased(vbase, tbase, nbase));
-		process_face(flst.size() - 1);
+		Face f = fsrc.make_rebased(vbase, tbase, nbase);
+		process_face(f);
 		return;
 	}
 
@@ -212,12 +212,12 @@ void Pipedata::addFace(const Face& fsrc)
 	if (a_cnt == 0) return;
 
 	for (unsigned a = 1; a < a_cnt - 1; a++) {
-		flst.push_back(make_tri(
+		Face f = make_tri(
 			fsrc.mf,
 			a_vidx[0], a_vidx[a], a_vidx[a + 1],
 			a_tidx[0], a_tidx[a], a_tidx[a + 1],
-			a_nidx[0], a_nidx[a], a_nidx[a + 1]));
-		process_face(flst.size() - 1);
+			a_nidx[0], a_nidx[a], a_nidx[a + 1]);
+		process_face(f);
 	}
 
 }
@@ -256,10 +256,8 @@ void Pipedata::addUV(const vec4& src)
 }
 
 
-void Pipedata::process_face(const int face_id)
+void Pipedata::process_face(Face& f)
 {
-	Face& f = flst[face_id];
-
 	vec4 p1 = vlst[f.ivp[0]].f;
 	vec4 p2 = vlst[f.ivp[1]].f;
 	vec4 p3 = vlst[f.ivp[2]].f;
@@ -276,7 +274,7 @@ void Pipedata::process_face(const int face_id)
 //		std::swap(p1, p3);
 //	}
 
-	binner.insert(p1, p2, p3, face_id);
+	binner.insert(p1, p2, p3, f);
 }
 
 
@@ -365,8 +363,7 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 	wire_shader.setColor(vec4(1, 0.66, 0.33, 0));
 
 	auto& bin = binner.bins[bin_idx];
-	for (auto& idx : bin.faces) {
-		auto& face = flst[idx];
+	for (auto& face : bin.faces) {
 
 		if (face.backfacing) continue;
 
