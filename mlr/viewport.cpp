@@ -65,7 +65,7 @@ Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, con
 	aspect(aspect),
 	fovy(fovy),
 	znear(1),
-	zfar(1000)
+	zfar(500)
 {
 	const auto DEG2RAD = PI / 180.0f;
 	const auto top = znear * tanf(fovy/2 * DEG2RAD);
