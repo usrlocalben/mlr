@@ -16,7 +16,7 @@ const unsigned CLIP_FAR    = 1 << 5;
 const float GUARDBAND_FACTOR = 2.0f;
 const vec4 GUARDBAND_WWWW(GUARDBAND_FACTOR, GUARDBAND_FACTOR, 1, 0);
 
-std::array<unsigned,5> CLIP_LIST = { CLIP_LEFT, CLIP_BOTTOM, CLIP_NEAR, CLIP_RIGHT, CLIP_TOP }; //CLIP_FAR
+//std::array<unsigned, 5> CLIP_LIST = { CLIP_LEFT, CLIP_BOTTOM, CLIP_NEAR, CLIP_RIGHT, CLIP_TOP }; //CLIP_FAR
 
 
 class Guardband {
