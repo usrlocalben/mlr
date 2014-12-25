@@ -342,4 +342,68 @@ private:
 	int matmod;
 };
 
+
+
+class MeshyMultiply2 : public Meshy {
+public:
+	MeshyMultiply2(Meshy& inmesh, int many, vec3& translate, vec3& rotate) :Meshy(inmesh.mesh), in(inmesh), many(many), translate(translate), rotate(rotate) {}
+
+	virtual void begin(const int t) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
+
+		idx = 0;
+		xform = mat4::ident();
+//		calc(idx, xform);
+		in.begin(t);
+	}
+	virtual bool next(const int t, mat4& m) {
+		int& idx = this->idx[t];
+		mat4& xform = this->xform[t];
+
+		if (idx == many) return false;
+
+		mat4 in_mat;
+		auto alive = in.next(t, in_mat);
+		if (!alive) {
+			idx++;
+			calc(idx, xform);
+			if (idx == many) return false;
+			in.begin(t);
+			in.next(t, in_mat);
+		}
+
+		mat4_mul(xform, in_mat, m);
+		return true;
+	}
+	virtual void fbegin(const int t) {
+		int& idx = this->idx[t];
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		int& idx = this->idx[t];
+		return in.fnext(t, f);
+	}
+
+	__forceinline void calc(const int idx, mat4& xform) {
+		mat4 tr = mat4::position(translate);
+		mat4 rx = mat4::rotate_x(rotate.x);
+		mat4 ry = mat4::rotate_y(rotate.y);
+		mat4 rz = mat4::rotate_z(rotate.z);
+		xform = mat4_mul(xform, mat4_mul(tr, mat4_mul(rx, mat4_mul(ry, rz))));
+
+//		mat4 sc = mat4::scale(vec3(1.0f) + scale*vec3(float(idx)));
+//		mat4_mul(tr, sc, xform);
+	}
+private:
+	Meshy& in;
+	int many;
+	vec3 translate;
+	vec3 rotate;
+
+	std::array<mat4,16> xform;
+	std::array<int,16> idx;
+	std::array<int, 16> fidx;
+};
+
 #endif //__MESHOPS_H
