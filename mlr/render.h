@@ -5,6 +5,8 @@
 #include "stdafx.h"
 
 #include <functional>
+#include <atomic>
+#include <thread>
 #include <vector>
 
 #include "aligned_allocator.h"
@@ -139,6 +141,8 @@ public:
 		camera_inverse = mat4_inverse(camera);
 	}
 	void render();
+	void render_thread(const int thread_number);
+	void process_thread(const int thread_number);
 
 	void index_bins() {
 		bin_index.clear();
@@ -182,6 +186,7 @@ private:
 	int framecounter;
 	const Viewport * vp;
 	std::vector<binstat> bin_index;
+	std::atomic<int> current_bin;
 
 	struct SOADepth * db;
 	struct SOACanvas * cb;

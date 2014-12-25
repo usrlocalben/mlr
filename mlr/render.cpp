@@ -308,23 +308,17 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 	}
 }
 
+vector<thread> thread_pool;
 
-void Pipeline::render()
+void Pipeline::render_thread(const int thread_number)
 {
-	auto my_thread_id = 0;
-	auto thread_count = 1;
+	while (1) {
+		int binnumber = current_bin++;
+		if (binnumber >= bin_index.size()) break;
 
-	auto& pipe = this->pipes[my_thread_id];
-	for (auto& mesh : this->meshlist) {
-		pipe.addMeshy(*mesh, camera_inverse, vp);
-	}
-//	mark(true);
+//		cout << "i'm thread " << thread_number << " and i'm doing bin " << binnumber << endl;
 
-	index_bins();
-//	mark(true);
-//	return;
-
-	for (auto& idx : bin_index) {
+		auto& idx = bin_index[binnumber];
 
 		const irect& tilerect = pipes[0].binner.bins[idx.first].rect;
 
@@ -336,6 +330,38 @@ void Pipeline::render()
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
 	}
+
+}
+
+
+void Pipeline::process_thread(const int thread_number){
+	auto& pipe = this->pipes[thread_number];
+	for (auto& mesh : this->meshlist) {
+		pipe.addMeshy(*mesh, camera_inverse, vp);
+	}
+}
+
+
+void Pipeline::render()
+{
+	for (int i = 1; i < this->threads; i++) {
+		thread_pool.push_back(thread(&Pipeline::process_thread, this, i));
+	}
+	process_thread(0);
+	for (auto& t : thread_pool) { t.join(); }
+	thread_pool.clear();
+
+//	mark(true);
+
+	index_bins();
+//	mark(true);
+	current_bin = 0;
+	for (int i = 1; i < this->threads; i++) {
+		thread_pool.push_back(thread(&Pipeline::render_thread, this, i));
+	}
+	render_thread(0);
+	for (auto& t : thread_pool) { t.join(); }
+	thread_pool.clear();
 }
 
 

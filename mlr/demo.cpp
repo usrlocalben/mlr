@@ -56,7 +56,7 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	texturestore(texturestore),
 	materialstore(materialstore),
 	telemetry(telemetry),
-	pipeline(1)
+	pipeline(4)
 {
 	on_resize(0, 0);
 
@@ -163,7 +163,7 @@ void Demo::render(
 //	pipeline.addMeshy(previous_op);
 
 	telemetry.mark();
-	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
+//	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
 
 	pipeline.setDepthbuffer(depthtarget);
 	pipeline.setColorbuffer(rendertarget);
