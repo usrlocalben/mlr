@@ -157,7 +157,7 @@ public:
 		camera = cam;
 		camera_inverse = mat4_inverse(camera);
 	}
-	void render(struct SOADepth& db, struct SOACanvas& cb, class MaterialStore& materialstore, class TextureStore& texturestore, std::function<void(bool)>& mark, TrueColorPixel * const __restrict target, const int target_width);
+	void render();
 
 	void index_bins() {
 		bin_index.clear();
@@ -172,6 +172,24 @@ public:
 			[](const binstat& a, const binstat& b){ return a.second > b.second; });
 	}
 
+	void setDepthbuffer(struct SOADepth& db) {
+		this->db = &db;
+	}
+	void setColorbuffer(struct SOACanvas& cb) {
+		this->cb = &cb;
+	}
+	void setMaterialStore(class MaterialStore& materialstore) {
+		this->materialstore = &materialstore;
+	}
+	void setTextureStore(class TextureStore& texturestore) {
+		this->texturestore = &texturestore;
+	}
+	void setTarget(TrueColorPixel * const __restrict target, const int target_width) {
+		this->target = target;
+		this->target_width = target_width;
+	}
+
+
 private:
 	const int threads;
 	vectorsse<Pipedata> pipes;
@@ -183,6 +201,13 @@ private:
 	int framecounter;
 	struct Viewport* vp;
 	std::vector<binstat> bin_index;
+
+	struct SOADepth * db;
+	struct SOACanvas * cb;
+	class MaterialStore * materialstore;
+	class TextureStore * texturestore;
+	TrueColorPixel * __restrict target;
+	int target_width;
 
 };
 

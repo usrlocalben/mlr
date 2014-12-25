@@ -165,7 +165,13 @@ void Demo::render(
 	telemetry.mark();
 	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
 
-	pipeline.render(depthtarget, rendertarget, this->materialstore, this->texturestore, _mark, target, target_width);
+	pipeline.setDepthbuffer(depthtarget);
+	pipeline.setColorbuffer(rendertarget);
+	pipeline.setMaterialStore(this->materialstore);
+	pipeline.setTextureStore(this->texturestore);
+	pipeline.setTarget(target, target_width);
+	pipeline.render();
+
 	telemetry.inc();
 
 	telemetry.mark();
