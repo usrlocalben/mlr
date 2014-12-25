@@ -95,8 +95,8 @@ public:
 	void on_s() { campos -= camdir_ahead; }
 	void on_a() { campos -= camdir_right; }
 	void on_d() { campos += camdir_right; }
-	void on_q() { campos -= vec4(0, 0, 1, 0); }
-	void on_e() { campos += vec4(0, 0, 1, 0); }
+	void on_q() { campos -= vec4(0, 1, 0, 0); }
+	void on_e() { campos += vec4(0, 1, 0, 0); }
 
 	void rot_x(const float a) { camrot += vec3(a, 0, 0); }
 	void rot_y(const float a) { camrot += vec3(0, a, 0); }
