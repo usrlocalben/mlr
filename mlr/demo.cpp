@@ -16,6 +16,7 @@
 #include "tri.h"
 #include "tri_sd.h"
 #include "demo.h"
+#include "utils.h"
 #include "canvas.h"
 #include "render.h"
 #include "rocket.h"
@@ -56,7 +57,7 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	texturestore(texturestore),
 	materialstore(materialstore),
 	telemetry(telemetry),
-	pipeline(4)
+	pipeline(get_cpu_count())
 {
 	on_resize(0, 0);
 

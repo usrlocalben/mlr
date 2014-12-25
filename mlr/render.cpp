@@ -3,10 +3,13 @@
 
 #include <vector>
 
+#include <Windows.h>
+
 #include "tri.h"
 #include "vec.h"
 #include "clip.h"
 #include "mesh.h"
+#include "utils.h"
 #include "render.h"
 #include "texture.h"
 #include "viewport.h"
@@ -87,12 +90,27 @@ Pipeline::Pipeline(const int threads)
 	pipes.clear();
 	for (int i = 0; i < threads; i++) {
 		pipes.push_back(Pipedata(i, threads));
+		signals_start[i] = 0;
+		if (i) {
+			workers.push_back(thread(&Pipeline::workerthread, this, i));
+		}
+	}
+}
+
+Pipeline::~Pipeline()
+{
+	for (int i = 1; i < threads; i++) {
+		signals_start[i] = -1;
+	}
+	for (auto & thread : workers) {
+		thread.join();
 	}
 }
 
 
+
 Pipedata::Pipedata(const int thread_number, const int thread_count)
-	:thread_number(thread_number), thread_count(thread_count)
+	:thread_number(thread_number), thread_count(thread_count), root_count(0)
 {
 //	reset(0,0);
 }
@@ -272,7 +290,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 {
 	const Mesh& mesh = *mi.mesh;
 
-	int next_idx = thread_number + root_count;
+	int next_idx = thread_number;// +root_count;
 	int this_idx = 0;
 	mat4 item;
 	for (mi.begin(thread_number); mi.next(thread_number, item); this_idx++) {
@@ -308,15 +326,11 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 	}
 }
 
-vector<thread> thread_pool;
-
 void Pipeline::render_thread(const int thread_number)
 {
 	while (1) {
 		int binnumber = current_bin++;
 		if (binnumber >= bin_index.size()) break;
-
-//		cout << "i'm thread " << thread_number << " and i'm doing bin " << binnumber << endl;
 
 		auto& idx = bin_index[binnumber];
 
@@ -342,26 +356,53 @@ void Pipeline::process_thread(const int thread_number){
 }
 
 
+void Pipeline::workerthread(const int thread_number)
+{
+	auto& signal_start = signals_start[thread_number];
+
+	bool done = false;
+	while (!done) {
+		while (signal_start == 0) {
+			Sleep(0);
+		}
+
+		int job_to_do = signal_start;
+
+		sse_speedup();
+
+		if (job_to_do == -1) {
+			done = true;
+		} else if (job_to_do == 1) {
+			process_thread(thread_number);
+		} else if (job_to_do == 2) {
+			render_thread(thread_number);
+		}
+		signal_start = 0;
+	}
+}
+
 void Pipeline::render()
 {
-	for (int i = 1; i < this->threads; i++) {
-		thread_pool.push_back(thread(&Pipeline::process_thread, this, i));
-	}
+	for (int i = 1; i < this->threads; i++) signals_start[i] = 1;
 	process_thread(0);
-	for (auto& t : thread_pool) { t.join(); }
-	thread_pool.clear();
-
+	for (int i = 1; i < this->threads; i++) {
+		while (signals_start[i] != 0) {
+			Sleep(0);
+		}
+	}
 //	mark(true);
 
 	index_bins();
 //	mark(true);
+
 	current_bin = 0;
-	for (int i = 1; i < this->threads; i++) {
-		thread_pool.push_back(thread(&Pipeline::render_thread, this, i));
-	}
+	for (int i = 1; i < this->threads; i++) signals_start[i] = 2;
 	render_thread(0);
-	for (auto& t : thread_pool) { t.join(); }
-	thread_pool.clear();
+	for (int i = 1; i < this->threads; i++) {
+		while (signals_start[i] != 0) {
+			Sleep(0);
+		}
+	}
 }
 
 

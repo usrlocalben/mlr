@@ -31,17 +31,19 @@ void bind_to_cpu0()
 }
 
 
-void sse_speedup()
-{
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);  // SSE flush-denormals-to-zero
-	_mm_setcsr(_mm_getcsr() | 0x8040);           // SSE2 denormals-are-zero
-}
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//bind_to_cpu0();
-	sse_speedup();
+//	sse_speedup();
+
+
+	if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS)) {
+		DWORD dwError = GetLastError();
+		cout << "failed to set process mode." << endl;
+	}
+
 	Application app;
 	//hackmode_enable = true;
 	//hackmode_width = 1280;
@@ -126,7 +128,7 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE h0, LPTSTR lpCmdLine, int nCmdSh
 	}
 
 	if (run_demo) {
-		sse_speedup();
+//		sse_speedup();
 		Application app;
 		if (run_tdfmode) {
 			hackmode_enable = 1;

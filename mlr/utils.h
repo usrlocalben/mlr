@@ -16,4 +16,7 @@ long long getmtime(const std::string& fn);
 std::vector<char> file_get_contents(const std::string& fn);
 void file_get_contents(const std::string& fn, std::vector<char>& buf);
 
+unsigned get_cpu_count();
+void sse_speedup();
+
 #endif //__UTILS_H

@@ -98,3 +98,18 @@ void file_get_contents(const string& fn, vector<char>& buf) {
 		f.read(&buf.front(), static_cast<std::size_t>(length));
 	}
 }
+
+
+unsigned get_cpu_count() {
+	//return 1;
+	SYSTEM_INFO si = { 0, };
+	GetSystemInfo(&si);
+	return si.dwNumberOfProcessors;
+}
+
+
+void sse_speedup()
+{
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);  // SSE flush-denormals-to-zero
+	_mm_setcsr(_mm_getcsr() | 0x8040);           // SSE2 denormals-are-zero
+}

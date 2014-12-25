@@ -120,6 +120,7 @@ typedef std::pair<int, int> binstat;
 class Pipeline {
 public:
 	Pipeline(const int threads);
+	~Pipeline();
 
 	void addMeshy(Meshy& mi) {
 		meshlist.push_back(&mi);
@@ -186,7 +187,6 @@ private:
 	int framecounter;
 	const Viewport * vp;
 	std::vector<binstat> bin_index;
-	std::atomic<int> current_bin;
 
 	struct SOADepth * db;
 	struct SOACanvas * cb;
@@ -194,6 +194,11 @@ private:
 	class TextureStore * texturestore;
 	TrueColorPixel * __restrict target;
 	int target_width;
+
+	std::atomic<int> signals_start[32];
+	std::atomic<int> current_bin;
+	std::vector<std::thread> workers;
+	void workerthread(const int thread_number);
 
 };
 
