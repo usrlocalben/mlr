@@ -10,9 +10,11 @@
 #include "aligned_allocator.h"
 
 #include "vec.h"
+#include "clip.h"
 #include "mesh.h"
 #include "canvas.h"
 #include "meshops.h"
+#include "viewport.h"
 
 
 struct PVertex {
@@ -20,33 +22,10 @@ struct PVertex {
 	vec4 f; // fixed 2d x,y,"z",1overw
 	vec4 p; // eyespace
 	vec4 c; // clipspace
-	vec4 s; // screenspace
 
 	vec4 n; // vertex normal
 };
 
-__forceinline PVertex lerp(const PVertex& a, const PVertex& b, const float t) {
-	PVertex n;
-	n.p = lerp(a.p, b.p, t);
-	n.c = lerp(a.c, b.c, t);
-	n.s = lerp(a.s, b.s, t);
-	n.n = normalized(lerp(a.n, b.n, t));
-
-	float one_over_w = 1 / n.s.w;
-	n.f = n.s / n.s.wwww();
-	n.f.w = one_over_w;
-
-	/*
-	cout << "----- PVertex lerp:" << endl;
-	cout << "t: " << t << endl;
-	cout << "p" << a.p << " -> " << n.p << " <- " << b.p << endl;
-	cout << "c" << a.c << " -> " << n.c << " <- " << b.c << endl;
-	cout << "s" << a.s << " -> " << n.s << " <- " << b.s << endl;
-	cout << "f" << a.f << " -> " << n.f << " <- " << b.f << endl;
-	cout << endl;
-	*/
-	return n;
-}
 
 
 struct Tilebin {
@@ -83,7 +62,7 @@ class Pipedata {
 public:
 	Pipedata(const int thread_number, const int thread_count);
 
-	void addMeshy(Meshy& mi, const mat4& camera_inverse, const struct Viewport * const vp);
+	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp);
 
 	void reset(const int width, const int height) {
 		vlst.clear();
@@ -94,12 +73,14 @@ public:
 		root_count = 0;
 		binner.reset(width, height);
 	}
-	void addFace(const Face& fsrc);
-	void addVertex(const struct Viewport * const vp, const vec4& src, const mat4& m);
+	void addFace(const Viewport& vp, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
 	void addUV(const vec4& src);
 	Binner binner;
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const struct Viewport * const vp, const int bin_idx);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport * const vp, const int bin_idx);
+
+	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
+	PVertex clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t);
 
 private:
 	void begin_batch() {
@@ -143,7 +124,7 @@ public:
 	}
 
 	void addLight(const Light& li);
-	void setViewport(struct Viewport* new_viewport) { this->vp = new_viewport; }
+	void setViewport(const Viewport * const vp) { this->vp = vp; }
 
 	void reset(const int width, const int height) {
 		for (auto& item : pipes) {
@@ -199,7 +180,7 @@ private:
 	mat4 camera_inverse;
 
 	int framecounter;
-	struct Viewport* vp;
+	const Viewport * vp;
 	std::vector<binstat> bin_index;
 
 	struct SOADepth * db;

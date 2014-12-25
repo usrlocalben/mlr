@@ -98,7 +98,7 @@ Pipedata::Pipedata(const int thread_number, const int thread_count)
 }
 
 
-void Pipedata::addFace(const Face& fsrc)
+void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 {
 	const int vidx1 = fsrc.ivp[0] + vbase;
 	const int vidx2 = fsrc.ivp[1] + vbase;
@@ -166,7 +166,7 @@ void Pipedata::addFace(const Face& fsrc)
 				we_are_inside = !we_are_inside;
 
 				const float t = Guardband::clipLine(planebit, this_v.c, next_v.c);
-				vlst.push_back(lerp(this_v, next_v, t));  b_vidx[b_cnt] = vlst.size() - 1;
+				vlst.push_back(clipcalc(vp, this_v, next_v, t));  b_vidx[b_cnt] = vlst.size() - 1;
 				tlst.push_back(lerp(this_t, next_t, t));  b_tidx[b_cnt] = tlst.size() - 1;
 				nlst.push_back(lerp(this_n, next_n, t));  b_nidx[b_cnt] = nlst.size() - 1;
 				b_cnt++;
@@ -198,23 +198,6 @@ void Pipedata::addFace(const Face& fsrc)
 }
 
 
-__forceinline void Pipedata::addVertex(const Viewport * const vp, const vec4& src, const mat4& m)
-{
-	PVertex pv;
-	pv.p = mat4_mul(m, src);
-	pv.c = vp->to_clip_space(pv.p);
-	pv.s = vp->to_screen_space(pv.c);
-
-	float one_over_w = 1 / pv.s.w;
-	pv.f = pv.s / pv.s.wwww();// ->to_device(pv.s);
-	pv.f.w = one_over_w;
-
-//	cout << "src:" << src << ", p:" << pv.p << ", c:" << pv.c << ", s:" << pv.s << ", f:" << pv.f << endl;
-
-	pv.cf = Guardband::clipPoint(pv.c);
-	vlst.push_back(pv);
-	new_vcnt++;
-}
 
 
 void Pipedata::addNormal(const vec4& src, const mat4& m)
@@ -228,6 +211,38 @@ void Pipedata::addUV(const vec4& src)
 {
 	tlst.push_back(src);
 	new_tcnt++;
+}
+
+
+__forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, const mat4& m)
+{
+	PVertex pv;
+	pv.p = mat4_mul(m, src);
+	pv.c = vp.to_clip_space(pv.p);
+	vec4 s = vp.to_screen_space(pv.c);
+
+	float one_over_w = 1 / s._w();
+	pv.f = s / s.wwww();
+	pv.f.w = one_over_w;
+
+	pv.cf = Guardband::clipPoint(pv.c);
+	vlst.push_back(pv);
+	new_vcnt++;
+}
+
+
+PVertex Pipedata::clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t)
+{
+	PVertex n;
+	n.p = lerp(a.p, b.p, t);
+	n.c = lerp(a.c, b.c, t);
+	vec4 s = vp.to_screen_space(n.c);
+	n.n = lerp(a.n, b.n, t);
+
+	float one_over_w = 1 / s.w;
+	n.f = s / s.wwww();
+	n.f.w = one_over_w;
+	return n;
 }
 
 
@@ -275,7 +290,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 
 		begin_batch();
 		for (auto& vert : mesh.bvp)
-			addVertex(vp, vert, to_camera);
+			addVertex(*vp, vert, to_camera);
 		for (auto& uv : mesh.buv)
 			addUV(uv);
 		for (auto& normal : mesh.bpn)
@@ -284,7 +299,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 		Face face;
 		mi.fbegin(thread_number);
 		for (; mi.fnext(thread_number, face); ) {
-			addFace(face);
+			addFace(*vp, face);
 		}
 //		for (auto& face : mesh.faces)
 //			addFace(face);
@@ -307,6 +322,7 @@ void Pipeline::render()
 
 	index_bins();
 //	mark(true);
+//	return;
 
 	for (auto& idx : bin_index) {
 
