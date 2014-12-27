@@ -19,11 +19,15 @@ public:
 	virtual bool next(const int t, mat4& m) = 0;
 	virtual void fbegin(const int t) = 0;
 	virtual bool fnext(const int t, struct Face& face) = 0;
+	virtual bool shadows_enabled() {
+		return false;
+	}
 	__forceinline void* operator new[]   (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void* operator new     (size_t x){ return _aligned_malloc(x, 16); }
 	__forceinline void  operator delete[](void*  x) { if (x) _aligned_free(x); }
 	__forceinline void  operator delete  (void*  x) { if (x) _aligned_free(x); }
 };
+
 
 class MeshySet : public Meshy {
 public:
@@ -63,6 +67,29 @@ private:
 	std::array<int,16> idx;
 	std::array<int, 16> fidx;
 	mat4 xform;
+};
+
+
+class MeshyShadows : public Meshy {
+public:
+	MeshyShadows(Meshy& inmesh) :Meshy(inmesh.mesh), in(inmesh) {}
+	virtual void begin(const int t) {
+		in.begin(t);
+	}
+	virtual bool next(const int t, mat4& m) {
+		return in.next(t,m);
+	}
+	virtual void fbegin(const int t) {
+		in.fbegin(t);
+	}
+	virtual bool fnext(const int t, Face& f) {
+		return in.fnext(t, f);
+	}
+	virtual bool shadows_enabled() {
+		return true;
+	}
+private:
+	Meshy& in;
 };
 
 
