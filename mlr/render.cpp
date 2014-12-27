@@ -291,7 +291,8 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 {
 	const Mesh& mesh = *mi.mesh;
 
-	int next_idx = thread_number;// +root_count;
+	int next_idx = (thread_number + (root_count++)) % thread_count;
+
 	int this_idx = 0;
 	mat4 item;
 	for (mi.begin(thread_number); mi.next(thread_number, item); this_idx++) {
