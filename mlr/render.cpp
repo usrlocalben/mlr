@@ -9,6 +9,7 @@
 #include "vec.h"
 #include "clip.h"
 #include "mesh.h"
+#include "stats.h"
 #include "utils.h"
 #include "render.h"
 #include "texture.h"
@@ -84,8 +85,8 @@ void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& 
 }
 
 
-Pipeline::Pipeline(const int threads)
-	:threads(threads)
+Pipeline::Pipeline(const int threads, class Telemetry& telemetry)
+	:threads(threads), telemetry(telemetry)
 {
 	pipes.clear();
 	for (int i = 0; i < threads; i++) {
@@ -343,8 +344,8 @@ void Pipeline::render_thread(const int thread_number)
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
+		telemetry.mark(thread_number);
 	}
-
 }
 
 
@@ -353,6 +354,7 @@ void Pipeline::process_thread(const int thread_number){
 	for (auto& mesh : this->meshlist) {
 		pipe.addMeshy(*mesh, camera_inverse, vp);
 	}
+	telemetry.mark(thread_number);
 }
 
 
@@ -390,10 +392,11 @@ void Pipeline::render()
 			Sleep(0);
 		}
 	}
-//	mark(true);
+	telemetry.inc();
 
 	index_bins();
-//	mark(true);
+	telemetry.mark(0);
+	telemetry.inc();
 
 	current_bin = 0;
 	for (int i = 1; i < this->threads; i++) signals_start[i] = 2;
@@ -403,6 +406,7 @@ void Pipeline::render()
 			Sleep(0);
 		}
 	}
+	telemetry.inc();
 }
 
 

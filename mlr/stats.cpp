@@ -18,7 +18,6 @@ const int NICE_FOREST = 0x558822;
 const int NICE_MAGENTA = 0x9911aa;
 
 
-Timer teletimer;
 vector<int> telecolors = {
 	NICE_BLUE, NICE_GREEN, NICE_LAVENDER, NICE_FOREST, NICE_MAGENTA,
 	NICE_BLUE, NICE_GREEN, NICE_LAVENDER, NICE_FOREST, NICE_MAGENTA,
@@ -29,26 +28,29 @@ vector<int> telecolors = {
 
 void Telemetry::start()
 {
-	this->markers.clear();
+	for (auto& item : data) {
+		item.markers.clear();
+		item.teletimer.reset();
+	}
 	this->x = 0;
-	teletimer.reset();
 }
 
-void Telemetry::mark()
+void Telemetry::mark(const int thread)
 {
-	this->markers.push_back({ teletimer.delta() * 1000, this->x++ });
+	auto& item = data[thread];
+	item.markers.push_back({ item.teletimer.delta() * 1000, this->x });
 }
 
-void Telemetry::mark2(bool advance)
+void Telemetry::inc()
 {
-	this->markers.push_back({ teletimer.delta() * 1000, this->x });
-	if (advance) this->x++;
+	x++;
 }
 
 void Telemetry::end()
 {
 }
 
+/*
 void Telemetry::print() const
 {
 	cout << "--------------" << endl;
@@ -56,6 +58,7 @@ void Telemetry::print() const
 		cout << "x:" << item.x << ", t:" << boost::format("%.4f") % item.tm << endl;
 	}
 }
+*/
 
 void Telemetry::draw(const unsigned stride, TrueColorPixel * const __restrict dst) const
 {
@@ -64,22 +67,29 @@ void Telemetry::draw(const unsigned stride, TrueColorPixel * const __restrict ds
 	//	const float ms_width = 40.0f;
 	const float factor = 20.0f;
 
-	int ci = 0;
-	int px = offset;
-	for (auto& item : markers) {
-		if (ci == 0) {
-			ci++; continue;
-		}
-		int width = static_cast<int>(item.tm * factor + 0.5);
-		for (int i = 0; px < stride - offset && i < width; i++, px++) {
-			for (int row = 0; row < 5; row++) {
-				dst[px + ((row + offset)*stride)].integer = telecolors[item.x];
+	int ypos = 40;
+	for (auto& t : data) {
+
+		int ci = 0;
+		int px = offset;
+		for (auto& item : t.markers) {
+//			if (ci == 0) {
+//				ci++; continue;
+//			}
+
+			int width = static_cast<int>(item.tm * factor + 0.5);
+			for (int i = 0; px < stride - offset && i < width; i++, px++) {
+				for (int row = 0; row < 5; row++) {
+					dst[px + ((row + ypos)*stride)].integer = telecolors[item.x];
+				}
 			}
+			if (width)
+				px += 1;
+
+			ci++;
 		}
-		if (width)
-			px += 1;
-		ci++;
-		//		cout << "x:" << item.x << ", t:" << boost::format("%.4f") % item.tm << endl;
+		ypos += 6;
+
 	}
 
 }

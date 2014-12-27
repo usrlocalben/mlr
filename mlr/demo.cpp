@@ -58,7 +58,7 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	texturestore(texturestore),
 	materialstore(materialstore),
 	telemetry(telemetry),
-	pipeline(get_cpu_count())
+	pipeline(get_cpu_count(), telemetry)
 {
 	on_resize(0, 0);
 
@@ -108,7 +108,7 @@ void Demo::render(
 	auto cubescale = vec3(cubescale_x, cubescale_y, cubescale_z);
 	Viewport vp(config_width, config_height, float(config_width) / float(config_height), zorp);
 
-	telemetry.mark();
+	telemetry.mark(0);
 
 	pipeline.reset(config_width, config_height);
 	pipeline.setViewport(&vp);
@@ -164,8 +164,7 @@ void Demo::render(
 	stack.push_back(make_unique<MeshyTranslate>(previous_op, mat4::rotate_y(T*rot_x)));
 //	pipeline.addMeshy(previous_op);
 
-	telemetry.mark();
-//	function<void(bool)> _mark = bind(&Telemetry::mark2, &telemetry, placeholders::_1);
+	telemetry.mark(0);
 
 	pipeline.setDepthbuffer(depthtarget);
 	pipeline.setColorbuffer(rendertarget);
@@ -175,8 +174,7 @@ void Demo::render(
 	pipeline.render();
 
 	telemetry.inc();
-
-	telemetry.mark();
+	telemetry.mark(0);
 }
 
 

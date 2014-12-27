@@ -119,7 +119,7 @@ typedef std::pair<int, int> binstat;
 
 class Pipeline {
 public:
-	Pipeline(const int threads);
+	Pipeline(const int threads, class Telemetry& telemetry);
 	~Pipeline();
 
 	void addMeshy(Meshy& mi) {
@@ -200,6 +200,7 @@ private:
 	std::vector<std::thread> workers;
 	void workerthread(const int thread_number);
 
+	class Telemetry& telemetry;
 };
 
 #endif //__RENDER_H

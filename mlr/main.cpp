@@ -172,7 +172,7 @@ int Application::run(const bool started_from_gui) {
 	MaterialStore materialstore;
 	TextureStore texturestore;
 
-	Telemetry telemetry;
+	Telemetry telemetry(get_cpu_count());
 
 	texturestore.loadDirectory("data\\textures\\");
 	meshstore.loadDirectory("data\\meshes\\", materialstore, texturestore);
@@ -239,7 +239,7 @@ SAMPLE(subtimer,ax_prep);
 
 		{
 			OutputFrame frame(display);
-			telemetry.mark();
+			telemetry.mark(0);
 SAMPLE(subtimer,ax_framestart);
 
 			TrueColorPixel *ob = frame.getBuffer();
