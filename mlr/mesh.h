@@ -58,6 +58,11 @@ struct Face {
 	int mf;
 //	int mb;
 
+	int edgelist[3];
+	int edgefaces[3];
+	vec4 nx,ny,nz;
+	vec4 px,py,pz;
+
 	__forceinline PFace make_rebased(const unsigned vbase, const unsigned tbase, const unsigned nbase) const {
 		PFace f;
 		f.ivp = { { ivp[0] + vbase, ivp[1] + vbase, ivp[2] + vbase } };
@@ -93,10 +98,14 @@ struct Mesh {
 	vectorsse<Face> faces;
 
 	std::string name;
-	//bool solid;
+
+	bool solid;
+	std::string message;
+
 	void print() const;
 	void calcBounds();
 	void calcNormals();
+	void assignEdges();
 };
 
 class MeshStore {

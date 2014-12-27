@@ -221,6 +221,7 @@ std::tuple<Mesh,MaterialStore> loadObj(const string& prepend, const string& fn)
 
 	mesh.calcBounds();
 	mesh.calcNormals();
+	mesh.assignEdges();
 	return std::tuple<Mesh,MaterialStore>(mesh, materials);
 }
 
