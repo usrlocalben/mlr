@@ -54,7 +54,7 @@ struct Face {
 	std::array<int,3> ivp;
 	std::array<int,3> iuv;
 	std::array<int,3> ipn;
-//	vec4 n;
+	vec4 n;
 	int mf;
 //	int mb;
 
@@ -86,7 +86,7 @@ struct Mesh {
 	vec4 bbox[8];
 
 	vectorsse<vec4> bvp; // vertex points
-//	vectorsse<vec4> bvn; // vertex normals
+	vectorsse<vec4> bvn; // vertex normals
 
 	vectorsse<vec4> bpn; // precalc'd normals
 	vectorsse<vec4> buv; // texture coords
@@ -96,6 +96,7 @@ struct Mesh {
 	//bool solid;
 	void print() const;
 	void calcBounds();
+	void calcNormals();
 };
 
 class MeshStore {

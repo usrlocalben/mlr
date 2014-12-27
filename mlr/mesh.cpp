@@ -39,6 +39,31 @@ void Mesh::calcBounds()
 	bbox[7] = { pmax.x, pmax.y, pmax.z, 1 };
 }
 
+
+void Mesh::calcNormals()
+{
+	bvn.clear();
+	for ( auto& vertex : bvp ) {
+		bvn.push_back(vec4::zero());
+	}
+
+	for ( auto& face : faces ) {
+		vec4 a = bvp[face.ivp[2]] - bvp[face.ivp[0]];
+		vec4 b = bvp[face.ivp[1]] - bvp[face.ivp[0]];
+		vec4 n = cross(b,a);
+		face.n = normalized(n);
+
+		bvn[face.ivp[0]] += n;
+		bvn[face.ivp[1]] += n;
+		bvn[face.ivp[2]] += n;
+	}
+
+	for ( auto& vertex_normal : bvn ) {
+		vertex_normal = normalized(vertex_normal);
+	}
+}
+
+
 void MaterialStore::print() const
 {
 	cout << "----- material pack -----" << endl;

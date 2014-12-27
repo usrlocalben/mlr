@@ -220,6 +220,7 @@ std::tuple<Mesh,MaterialStore> loadObj(const string& prepend, const string& fn)
 	}
 
 	mesh.calcBounds();
+	mesh.calcNormals();
 	return std::tuple<Mesh,MaterialStore>(mesh, materials);
 }
 
