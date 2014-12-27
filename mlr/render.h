@@ -59,6 +59,12 @@ private:
 	vec4 device_max;
 };
 
+struct ShadowMesh {
+	const Mesh* mesh;
+	int vbase;
+	mat4 c2o; // cameraspace-to-objectspace
+};
+
 
 class Pipedata {
 public:
@@ -74,6 +80,7 @@ public:
 		batch_in_progress = 0;
 		root_count = 0;
 		binner.reset(width, height);
+		shadowqueue.clear();
 	}
 	void addFace(const Viewport& vp, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
@@ -111,6 +118,8 @@ private:
 	const int thread_number;
 	const int thread_count;
 	int root_count;
+
+	vectorsse<ShadowMesh> shadowqueue;
 };
 
 

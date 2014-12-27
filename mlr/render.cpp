@@ -308,6 +308,14 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 			tbb[bi] = mat4_mul(to_camera, mesh.bbox[bi]);
 		if (!vp->is_visible(tbb)) continue;
 
+		if ( mi.shadows_enabled() ) {
+			ShadowMesh sm;
+			sm.mesh = mi.mesh;
+			sm.c2o = mat4_inverse(to_camera);
+			sm.vbase = vlst.size();
+			shadowqueue.push_back(sm);
+		}
+
 		begin_batch();
 		for (auto& vert : mesh.bvp)
 			addVertex(*vp, vert, to_camera);
