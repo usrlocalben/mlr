@@ -129,6 +129,9 @@
     <ClInclude Include="..\mtwist\mtwist.h">
       <Filter>libs</Filter>
     </ClInclude>
+    <ClInclude Include="stats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -202,6 +205,9 @@
     </ClCompile>
     <ClCompile Include="..\mtwist\mtwist.cpp">
       <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="stats.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

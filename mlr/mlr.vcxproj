@@ -90,6 +90,7 @@
     <ClInclude Include="demo.h" />
     <ClInclude Include="dib24.h" />
     <ClInclude Include="gason.h" />
+    <ClInclude Include="stats.h" />
     <ClInclude Include="jsonfile.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="main.h" />
@@ -148,6 +149,7 @@
     <ClCompile Include="profont.cpp" />
     <ClCompile Include="render.cpp" />
     <ClCompile Include="rocket.cpp" />
+    <ClCompile Include="stats.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

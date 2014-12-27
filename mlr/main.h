@@ -5,24 +5,6 @@
 
 using namespace PixelToaster;
 
-struct Telemarker {
-	double tm;
-	int x;
-};
-
-class Telemetry {
-public:
-	void start();
-	void mark();
-	void mark2(bool);
-	void inc() { x++; }
-	void end();
-	void print() const;
-	void draw(const unsigned stride, TrueColorPixel * const __restrict dst) const;
-private:
-	std::vector<Telemarker> markers;
-	int x;
-};
 
 class Application : public PixelToaster::Listener {
 public:

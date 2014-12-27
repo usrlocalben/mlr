@@ -16,6 +16,7 @@
 #include "tri.h"
 #include "tri_sd.h"
 #include "demo.h"
+#include "stats.h"
 #include "utils.h"
 #include "canvas.h"
 #include "render.h"
