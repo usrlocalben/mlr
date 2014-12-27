@@ -40,6 +40,16 @@ public:
 	vectorsse<Material> store;
 };
 
+struct PFace {
+	std::array<int,3> ivp;
+	std::array<int,3> iuv;
+	std::array<int,3> ipn;
+//	vec4 n;
+	int mf;
+//	int mb;
+	bool backfacing;
+};
+
 struct Face {
 	std::array<int,3> ivp;
 	std::array<int,3> iuv;
@@ -48,10 +58,8 @@ struct Face {
 	int mf;
 //	int mb;
 
-	bool backfacing;
-
-	__forceinline Face make_rebased(const unsigned vbase, const unsigned tbase, const unsigned nbase) const {
-		Face f;
+	__forceinline PFace make_rebased(const unsigned vbase, const unsigned tbase, const unsigned nbase) const {
+		PFace f;
 		f.ivp = { { ivp[0] + vbase, ivp[1] + vbase, ivp[2] + vbase } };
 		f.iuv = { { iuv[0] + tbase, iuv[1] + tbase, iuv[2] + tbase } };
 		f.ipn = { { ipn[0] + nbase, ipn[1] + nbase, ipn[2] + nbase } };
@@ -60,13 +68,13 @@ struct Face {
 	}
 };
 
-__forceinline Face make_tri(
+__forceinline PFace make_tri(
 	const int mf,
 	const int v1, const int v2, const int v3,
 	const int t1, const int t2, const int t3,
 	const int n1, const int n2, const int n3)
 {
-	Face f;
+	PFace f;
 	f.mf = mf;
 	f.ivp = { { v1, v2, v3 } };
 	f.iuv = { { t1, t2, t3 } };

@@ -61,7 +61,7 @@ void Binner::onResize()
 }
 
 
-void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& face)
+void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face)
 {
 	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
 	auto pmax = vmin(vmax(p1, vmax(p2, p3)), device_max);
@@ -206,7 +206,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 	if (a_cnt == 0) return;
 
 	for (unsigned a = 1; a < a_cnt - 1; a++) {
-		Face f = make_tri(
+		PFace f = make_tri(
 			fsrc.mf,
 			a_vidx[0], a_vidx[a], a_vidx[a + 1],
 			a_tidx[0], a_tidx[a], a_tidx[a + 1],
@@ -265,7 +265,7 @@ PVertex Pipedata::clipcalc(const Viewport& vp, const PVertex& a, const PVertex& 
 }
 
 
-void Pipedata::process_face(Face& f)
+void Pipedata::process_face(PFace& f)
 {
 	vec4 p1 = vlst[f.ivp[0]].f;
 	vec4 p2 = vlst[f.ivp[1]].f;

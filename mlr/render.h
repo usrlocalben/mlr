@@ -33,7 +33,7 @@ struct PVertex {
 struct Tilebin {
 	irect rect;
 	int id;
-	std::vector<Face> faces;
+	std::vector<PFace> faces;
 	void reset() {
 		faces.clear();
 	}
@@ -42,7 +42,7 @@ struct Tilebin {
 class Binner {
 public:
 	void reset(const int cur_width, const int cur_height);
-	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const Face& face);
+	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face);
 	void sort();
 	void unsort();
 	Binner() :device_height(0), device_width(0) {}
@@ -101,7 +101,7 @@ private:
 		nbase = nlst.size();
 		batch_in_progress = 0;
 	}
-	void process_face(Face& f);
+	void process_face(PFace& f);
 
 	vectorsse<PVertex> vlst;  unsigned vbase;    int new_vcnt;    int clipbase;
 	vectorsse<vec4> nlst;     unsigned nbase;    int new_ncnt;
