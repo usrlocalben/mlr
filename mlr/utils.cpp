@@ -5,10 +5,13 @@
 #include <vector>
 #include <codecvt>
 #include <fstream>
+#include <iostream>
+#include <boost/format.hpp>
 
 #include <Windows.h>
 
 using namespace std;
+using boost::format;
 
 wstring s2ws(const string& str)
 {
@@ -112,4 +115,17 @@ void sse_speedup()
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);  // SSE flush-denormals-to-zero
 	_mm_setcsr(_mm_getcsr() | 0x8040);           // SSE2 denormals-are-zero
+}
+
+
+void bind_to_cpu(const int cpu)
+{
+	if (1) {
+		const HANDLE self = GetCurrentThread();
+		const DWORD_PTR pmask = SetThreadAffinityMask(self, 1 << (cpu*2));
+		if (0) {
+			const DWORD_PTR pmask2 = SetThreadAffinityMask(self, 1<<(cpu*2));
+			cout << "original pmask was " << format("%x") % pmask << ", new pmask is " << format("%x") % pmask2 << endl;
+		}
+	}
 }

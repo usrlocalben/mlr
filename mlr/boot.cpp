@@ -10,6 +10,7 @@
 #include <Windows.h>
 
 #include "main.h"
+#include "utils.h"
 
 using namespace std;
 using boost::format;
@@ -19,30 +20,21 @@ int hackmode_enable = 0;
 int hackmode_height = 0;
 int hackmode_width = 0;
 
-void bind_to_cpu0()
-{
-	const HANDLE self = GetCurrentThread();
-	const DWORD_PTR pmask = SetThreadAffinityMask(self, 1);
-
-	if (0) {
-		const DWORD_PTR pmask2 = SetThreadAffinityMask(self, 1);
-		cout << "original pmask was " << format("%x") % pmask << ", new pmask is " << format("%x") % pmask2 << endl;
-	}
-}
 
 
 
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//bind_to_cpu0();
-//	sse_speedup();
+	bind_to_cpu(0);
 
-
+/*
 	if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS)) {
+//	if (!SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS)) {
 		DWORD dwError = GetLastError();
 		cout << "failed to set process mode." << endl;
 	}
+*/
 
 	Application app;
 	//hackmode_enable = true;

@@ -369,6 +369,8 @@ void Pipeline::process_thread(const int thread_number){
 
 void Pipeline::workerthread(const int thread_number)
 {
+	bind_to_cpu(thread_number);
+
 	auto& signal_start = signals_start[thread_number];
 
 	bool done = false;

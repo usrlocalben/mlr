@@ -18,5 +18,6 @@ void file_get_contents(const std::string& fn, std::vector<char>& buf);
 
 unsigned get_cpu_count();
 void sse_speedup();
+void bind_to_cpu(const int cpu);
 
 #endif //__UTILS_H
