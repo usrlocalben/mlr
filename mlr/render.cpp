@@ -232,19 +232,23 @@ void Pipedata::addUV(const vec4& src)
 	new_tcnt++;
 }
 
+__forceinline void PVertex::process(const Viewport& vp)
+{
+	this->c = vp.to_clip_space(this->p);
+	vec4 s = vp.to_screen_space(this->c);
+
+	float one_over_w = 1 / s._w();
+	this->f = s / s.wwww();
+	this->f.w = one_over_w;
+
+	this->cf = Guardband::clipPoint(this->c);
+}
 
 __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, const mat4& m)
 {
 	PVertex pv;
 	pv.p = mat4_mul(m, src);
-	pv.c = vp.to_clip_space(pv.p);
-	vec4 s = vp.to_screen_space(pv.c);
-
-	float one_over_w = 1 / s._w();
-	pv.f = s / s.wwww();
-	pv.f.w = one_over_w;
-
-	pv.cf = Guardband::clipPoint(pv.c);
+	pv.process(vp);
 	vlst.push_back(pv);
 	new_vcnt++;
 }

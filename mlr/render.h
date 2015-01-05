@@ -26,6 +26,8 @@ struct PVertex {
 	vec4 c; // clipspace
 
 	vec4 n; // vertex normal
+
+	void process(const Viewport& vp);
 };
 
 
