@@ -77,7 +77,7 @@ public:
 
 	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp);
 	void add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3);
-	void build_shadows(const Viewport& vp, const vec4& light_position);
+	void build_shadows(const Viewport& vp, const int light_id);
 
 	void reset(const int width, const int height) {
 		vlst.clear();
@@ -92,6 +92,7 @@ public:
 	void addFace(const Viewport& vp, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
 	void addUV(const vec4& src);
+	void addLight(const Light& light);
 	Binner binner;
 	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 
@@ -161,7 +162,7 @@ public:
 	void render();
 	void render_thread(const int thread_number);
 	void process_thread(const int thread_number);
-	void shadow_thread(const int thread_number, const vec4& light_position);
+	void shadow_thread(const int thread_number);
 
 	void index_bins() {
 		bin_index.clear();

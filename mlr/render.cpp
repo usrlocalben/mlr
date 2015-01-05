@@ -270,6 +270,11 @@ void Pipedata::addUV(const vec4& src)
 	new_tcnt++;
 }
 
+void Pipedata::addLight(const Light& light)
+{
+	llst.push_back(light);
+}
+
 __forceinline void PVertex::process(const Viewport& vp)
 {
 	this->c = vp.to_clip_space(this->p);
@@ -408,6 +413,14 @@ void Pipeline::render_thread(const int thread_number)
 }
 
 
+void Pipeline::addLight(const Light& light)
+{
+	for (int i = 0; i < threads; i++) {
+		this->pipes[i].addLight(light);
+	}
+}
+
+
 void Pipeline::process_thread(const int thread_number){
 	auto& pipe = this->pipes[thread_number];
 	for (auto& mesh : this->meshlist) {
@@ -416,10 +429,12 @@ void Pipeline::process_thread(const int thread_number){
 	telemetry.mark(thread_number);
 }
 
-void Pipeline::shadow_thread(const int thread_number, const vec4& light_position)
+void Pipeline::shadow_thread(const int thread_number)
 {
 	auto& pipe = this->pipes[thread_number];
-	pipe.build_shadows(*vp, light_position);
+
+	pipe.build_shadows(*vp, 0);
+	telemetry.mark(thread_number);
 }
 
 
@@ -443,6 +458,8 @@ void Pipeline::workerthread(const int thread_number)
 			process_thread(thread_number);
 		} else if (job_to_do == 2) {
 			render_thread(thread_number);
+		} else if (job_to_do == 3) {
+			shadow_thread(thread_number);
 		}
 		signal_start = 0;
 	}
@@ -452,6 +469,13 @@ void Pipeline::render()
 {
 	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 1;
 	process_thread(0);
+	for (int i = 1; i < this->threads; i++) {
+		while (pipes[i].my_signal != 0) SLEEP_METHOD;
+	}
+	telemetry.inc();
+
+	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 3;
+	shadow_thread(0);
 	for (int i = 1; i < this->threads; i++) {
 		while (pipes[i].my_signal != 0) SLEEP_METHOD;
 	}
@@ -592,12 +616,13 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	}
 }
 
-void Pipedata::build_shadows(const Viewport& vp, const vec4& light_position)
+void Pipedata::build_shadows(const Viewport& vp, const int light_id)
 {
+	auto& light = this->llst[light_id];
 	for (auto& svmesh : shadowqueue) {
 		const PVertex * const vb = &vlst[svmesh.vbase];
 
-		auto inv_light_position = mat4_mul(svmesh.c2o, light_position);
+		auto inv_light_position = mat4_mul(svmesh.c2o, light.position);
 		auto inv_light_position_x = inv_light_position.xxxx();
 		auto inv_light_position_y = inv_light_position.yyyy();
 		auto inv_light_position_z = inv_light_position.zzzz();
@@ -610,9 +635,9 @@ void Pipedata::build_shadows(const Viewport& vp, const vec4& light_position)
 
 			auto dots = (face.nx*light_dir_x + face.ny*light_dir_y + face.nz*light_dir_z);
 			if ( dots._x() > 0 ) {    // facing away from light
-				auto p1 = extrude_to_infinity(vb[face.ivp[0]].p, light_position);
-				auto p2 = extrude_to_infinity(vb[face.ivp[1]].p, light_position);
-				auto p3 = extrude_to_infinity(vb[face.ivp[2]].p, light_position);
+				auto p1 = extrude_to_infinity(vb[face.ivp[0]].p, light.position);
+				auto p2 = extrude_to_infinity(vb[face.ivp[1]].p, light.position);
+				auto p3 = extrude_to_infinity(vb[face.ivp[2]].p, light.position);
 				add_shadow_triangle(vp, p1, p2, p3);
 			} else {               // facing towards lightA
 				vec4 edge_a[3];
@@ -636,8 +661,8 @@ void Pipedata::build_shadows(const Viewport& vp, const vec4& light_position)
 				for (int i=0; i<paircnt; i++) {
 					auto& na = edge_a[i];
 					auto& nb = edge_b[i];
-					auto fa = extrude_to_infinity(na, light_position);
-					auto fb = extrude_to_infinity(nb, light_position);
+					auto fa = extrude_to_infinity(na, light.position);
+					auto fb = extrude_to_infinity(nb, light.position);
 					add_shadow_triangle(vp, na, nb, fb); // quad na->nb->fb->fa
 					add_shadow_triangle(vp, na, fb, fa);
 				}

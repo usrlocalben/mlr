@@ -17,7 +17,7 @@ struct Light {
 	float power_diffuse;
 	vec4 color_specular;
 	float power_specular;
-//	bool casts_shadows;
+	bool casts_shadows;
 };
 
 

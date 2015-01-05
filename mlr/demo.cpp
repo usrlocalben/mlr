@@ -113,6 +113,9 @@ void Demo::render(
 	auto cubescale = vec3(cubescale_x, cubescale_y, cubescale_z);
 	Viewport vp(config_width, config_height, float(config_width) / float(config_height), zorp);
 
+	vec4 light_pos(50,50,10,1);
+	pipeline.addLight({ light_pos, vec4(1, 1, 1, 0), 100.0f, vec4(1, 1, 1, 0), 0, true });
+
 	telemetry.mark(0);
 
 	pipeline.reset(config_width, config_height);
