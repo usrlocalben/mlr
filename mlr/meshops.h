@@ -196,13 +196,9 @@ public:
 		int& idx = this->idx[t];
 		mat4& xform = this->xform[t];
 
-		vec4 bbox_min;
-		vec4 bbox_max;
-		in.begin(t);
+		auto bbox_min = vec4(1e20F);
+		auto bbox_max = vec4(-1e20F);
 		mat4 in_mat;
-		in.next(t, in_mat);
-		vec4 xb = mat4_mul(in_mat, mesh->bbox[0]);
-		bbox_min = bbox_max = xb;
 
 		in.begin(t);
 		while ( in.next(t, in_mat) ) {
@@ -213,28 +209,16 @@ public:
 			}
 		}
 
-		float& minx = bbox_min.x;
-		float& miny = bbox_min.y;
-		float& minz = bbox_min.z;
-		float& maxx = bbox_max.x;
-		float& maxy = bbox_max.y;
-		float& maxz = bbox_max.z;
+		auto center_adjust = -(bbox_min + (bbox_max - bbox_min)*vec4(0.5f));
 
-		/*
-		vec4 centered = -(bbox_min + (bbox_max - bbox_min) / vec4(2.0f));
-		ivec4 mask(center_x ? -1 : 0, center_y ? -1 : 0, center_z ? -1 : 0, 0);
-		*/
-
-		// calculate mat4 based on mins and maxs
-		const float move_x = center_x ? -(minx + (maxx - minx) / 2) : 0;
+		const float move_x = center_x ? center_adjust._x() : 0;
 		float move_y;
 		if (!y_on_floor) {
-			move_y = center_y ? -(miny + (maxy - miny) / 2) : 0;
+			move_y = center_y ? center_adjust._y() : 0;
 		} else {
-			move_y = center_y ? 0 - miny : 0;
+			move_y = center_y ? 0 - bbox_min._y() : 0;
 		}
-		const float move_z = center_z ? -(minz + (maxz - minz) / 2) : 0;
-//		cout << "move:" << vec3(move_x, move_y, move_z) << endl;
+		const float move_z = center_z ? center_adjust._z() : 0;
 
 		xform = mat4::position({ move_x, move_y, move_z, 1 });
 
