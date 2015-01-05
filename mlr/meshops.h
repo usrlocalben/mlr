@@ -134,7 +134,7 @@ private:
 
 class MeshyMultiply : public Meshy {
 public:
-	MeshyMultiply(Meshy& inmesh, int many, vec3& translate, vec3& scale) :Meshy(inmesh.mesh), in(inmesh), many(many), translate(translate), scale(scale) {}
+	MeshyMultiply(Meshy& inmesh, int many, vec3& translate, vec3& scale) :Meshy(inmesh.mesh), in(inmesh), many(many), translate(translate.x,translate.y,translate.z,1), scale(scale.x,scale.y,scale.z,1) {}
 
 	virtual void begin(const int t) {
 		int& idx = this->idx[t];
@@ -173,15 +173,16 @@ public:
 	}
 
 	__forceinline void calc(const int idx, mat4& xform) {
-		mat4 tr = mat4::position(translate*vec3(float(idx)));
-		mat4 sc = mat4::scale(vec3(1.0f) + scale*vec3(float(idx)));
+		auto fidx = vec4(idx, idx, idx, 1);
+		mat4 tr = mat4::position(translate*fidx);
+		mat4 sc = mat4::scale(vec4(1,1,1,1) + scale*fidx);
 		mat4_mul(tr, sc, xform);
 	}
 private:
 	Meshy& in;
 	int many;
-	vec3 translate;
-	vec3 scale;
+	vec4 translate;
+	vec4 scale;
 
 	std::array<mat4,16> xform;
 	std::array<int,16> idx;
@@ -264,7 +265,7 @@ private:
 
 class MeshyScatter : public Meshy {
 public:
-	MeshyScatter(Meshy& inmesh, int many, vec3& position) :Meshy(inmesh.mesh), in(inmesh), many(many), position(position) {}
+	MeshyScatter(Meshy& inmesh, int many, vec3& position) :Meshy(inmesh.mesh), in(inmesh), many(many), position({ position.x, position.y, position.z, 1 }) {}
 
 	virtual void begin(const int t) {
 		int& idx = this->idx[t];
@@ -289,7 +290,7 @@ public:
 			in.next(t, in_mat);
 		}
 
-		auto this_pos = vec3(mt(), mt(), mt()) * position;
+		auto this_pos = vec4(mt()*2-1, mt()*2-1, mt()*2-1,1) * position;
 		mat4_mul(mat4::position(this_pos), in_mat, m);
 		return true;
 	}
@@ -305,7 +306,7 @@ public:
 private:
 	Meshy& in;
 	int many;
-	vec3 position;
+	vec4 position;
 
 	std::array<int,16> idx;
 	std::array<int, 16> fidx;
