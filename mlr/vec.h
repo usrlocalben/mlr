@@ -617,6 +617,12 @@ __declspec(align(16)) struct mat4 {
 					vec4(  0,   0, a.z,  0).v,
 					vec4(  0,   0,   0,  1).v);
 	}
+	static __forceinline mat4 scale(const vec4& a) {
+		return mat4(vec4(a._x(),   0,   0,  0).v,
+					vec4(  0, a._y(),   0,  0).v,
+					vec4(  0,   0, a._z(),  0).v,
+					vec4(  0,   0,   0,  1).v);
+	}
 
 	static __forceinline mat4 position(const vec4& a) {
 		return mat4(vec4(1, 0, 0, 0).v,
