@@ -381,14 +381,14 @@ void Pipeline::render_thread(const int thread_number)
 		int binnumber = current_bin++;
 		if (binnumber >= bin_index.size()) break;
 
-		auto& idx = bin_index[binnumber];
+		auto& idx = bin_index[binnumber].first;
 
-		const irect& tilerect = pipes[0].binner.bins[idx.first].rect;
+		const irect& tilerect = pipes[0].binner.bins[idx].rect;
 
 		db->clear(tilerect);
 		cb->clear(tilerect);
 		for (int ti = 0; ti < threads; ti++) {
-			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx.first);
+			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
