@@ -189,8 +189,8 @@ void Demo::on_resize(const int new_x, const int new_y)
 	config_height = new_y;
 	rendertarget.setup(config_width, config_height);
 	depthtarget.setup(config_width, config_height);
-	wholescreen.x0 = 0;  //64; // 300;
-	wholescreen.y0 = 0;  // 64; //90;
+	wholescreen.x0 = 0;
+	wholescreen.y0 = 0;
 	wholescreen.x1 = config_width;
 	wholescreen.y1 = config_height;
 }
