@@ -22,8 +22,8 @@ const int tile_width_in_subtiles = 16;
 const int tile_height_in_subtiles = 8;
 
 //#define SLEEP_METHOD
-//#define SLEEP_METHOD Sleep(0)
-#define SLEEP_METHOD Sleep(1)
+#define SLEEP_METHOD Sleep(0)
+//#define SLEEP_METHOD Sleep(1)
 
 __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
 {
