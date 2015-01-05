@@ -21,6 +21,9 @@ using namespace std;
 const int tile_width_in_subtiles = 16;
 const int tile_height_in_subtiles = 8;
 
+//#define SLEEP_METHOD
+//#define SLEEP_METHOD Sleep(0)
+#define SLEEP_METHOD Sleep(1)
 
 __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
 {
@@ -428,9 +431,7 @@ void Pipeline::workerthread(const int thread_number)
 
 	bool done = false;
 	while (!done) {
-		while (signal_start == 0) {
-			Sleep(0);
-		}
+		while (signal_start == 0) SLEEP_METHOD;
 
 		int job_to_do = signal_start;
 
@@ -452,9 +453,7 @@ void Pipeline::render()
 	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 1;
 	process_thread(0);
 	for (int i = 1; i < this->threads; i++) {
-		while (pipes[i].my_signal != 0) {
-			Sleep(0);
-		}
+		while (pipes[i].my_signal != 0) SLEEP_METHOD;
 	}
 	telemetry.inc();
 
@@ -466,9 +465,7 @@ void Pipeline::render()
 	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 2;
 	render_thread(0);
 	for (int i = 1; i < this->threads; i++) {
-		while (pipes[i].my_signal != 0) {
-			Sleep(0);
-		}
+		while (pipes[i].my_signal != 0) SLEEP_METHOD;
 	}
 	telemetry.inc();
 }
