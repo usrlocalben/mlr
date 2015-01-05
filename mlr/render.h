@@ -70,7 +70,7 @@ struct ShadowMesh {
 
 class Pipedata {
 public:
-	Pipedata(const int thread_number, const int thread_count);
+	void setup(const int thread_number, const int thread_count);
 
 	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp);
 
@@ -93,6 +93,7 @@ public:
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 	PVertex clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t);
 
+	std::atomic<int> my_signal;
 private:
 	void begin_batch() {
 		_ASSERT(batch_in_progress == 0);
@@ -117,8 +118,8 @@ private:
 	vectorsse<vec4> tlst;     unsigned tbase;    int new_tcnt;
 	vectorsse<Light> llst;    unsigned lbase;
 	int batch_in_progress;
-	const int thread_number;
-	const int thread_count;
+	int thread_number;
+	int thread_count;
 	int root_count;
 
 	vectorsse<ShadowMesh> shadowqueue;
@@ -189,7 +190,7 @@ public:
 
 private:
 	const int threads;
-	vectorsse<Pipedata> pipes;
+	Pipedata pipes[16];
 	std::vector<Meshy*> meshlist;
 
 	mat4 camera;
@@ -206,7 +207,6 @@ private:
 	TrueColorPixel * __restrict target;
 	int target_width;
 
-	std::atomic<int> signals_start[32];
 	std::atomic<int> current_bin;
 	std::vector<std::thread> workers;
 	void workerthread(const int thread_number);

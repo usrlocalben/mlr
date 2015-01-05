@@ -88,10 +88,8 @@ void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace&
 Pipeline::Pipeline(const int threads, class Telemetry& telemetry)
 	:threads(threads), telemetry(telemetry)
 {
-	pipes.clear();
 	for (int i = 0; i < threads; i++) {
-		pipes.push_back(Pipedata(i, threads));
-		signals_start[i] = 0;
+		pipes[i].setup(i, threads);
 		if (i) {
 			workers.push_back(thread(&Pipeline::workerthread, this, i));
 		}
@@ -101,7 +99,7 @@ Pipeline::Pipeline(const int threads, class Telemetry& telemetry)
 Pipeline::~Pipeline()
 {
 	for (int i = 1; i < threads; i++) {
-		signals_start[i] = -1;
+		pipes[i].my_signal = -1;
 	}
 	for (auto & thread : workers) {
 		thread.join();
@@ -109,11 +107,12 @@ Pipeline::~Pipeline()
 }
 
 
-
-Pipedata::Pipedata(const int thread_number, const int thread_count)
-	:thread_number(thread_number), thread_count(thread_count), root_count(0)
+void Pipedata::setup(const int thread_number, const int thread_count)
 {
-//	reset(0,0);
+	this->thread_number = thread_number;
+	this->thread_count = thread_count;
+	this->root_count = 0;
+	this->my_signal = 0;
 }
 
 
@@ -375,7 +374,7 @@ void Pipeline::workerthread(const int thread_number)
 {
 	bind_to_cpu(thread_number);
 
-	auto& signal_start = signals_start[thread_number];
+	auto& signal_start = pipes[thread_number].my_signal;
 
 	bool done = false;
 	while (!done) {
@@ -400,10 +399,10 @@ void Pipeline::workerthread(const int thread_number)
 
 void Pipeline::render()
 {
-	for (int i = 1; i < this->threads; i++) signals_start[i] = 1;
+	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 1;
 	process_thread(0);
 	for (int i = 1; i < this->threads; i++) {
-		while (signals_start[i] != 0) {
+		while (pipes[i].my_signal != 0) {
 			Sleep(0);
 		}
 	}
@@ -414,10 +413,10 @@ void Pipeline::render()
 	telemetry.inc();
 
 	current_bin = 0;
-	for (int i = 1; i < this->threads; i++) signals_start[i] = 2;
+	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 2;
 	render_thread(0);
 	for (int i = 1; i < this->threads; i++) {
-		while (signals_start[i] != 0) {
+		while (pipes[i].my_signal != 0) {
 			Sleep(0);
 		}
 	}
