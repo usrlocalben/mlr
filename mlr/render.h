@@ -72,7 +72,7 @@ class Pipedata {
 public:
 	void setup(const int thread_number, const int thread_count);
 
-	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp);
+	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp);
 
 	void reset(const int width, const int height) {
 		vlst.clear();
@@ -88,7 +88,7 @@ public:
 	void addNormal(const vec4& src, const mat4& m);
 	void addUV(const vec4& src);
 	Binner binner;
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport * const vp, const int bin_idx);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 	PVertex clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t);

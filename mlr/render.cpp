@@ -290,7 +290,7 @@ void Pipedata::process_face(PFace& f)
 }
 
 
-void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * const vp)
+void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp)
 {
 	const Mesh& mesh = *mi.mesh;
 
@@ -309,7 +309,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 		vec4 tbb[8];
 		for (int bi = 0; bi < 8; bi++ )
 			tbb[bi] = mat4_mul(to_camera, mesh.bbox[bi]);
-		if (!vp->is_visible(tbb)) continue;
+		if (!vp.is_visible(tbb)) continue;
 
 		if ( mi.shadows_enabled() ) {
 			ShadowMesh sm;
@@ -321,7 +321,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 
 		begin_batch();
 		for (auto& vert : mesh.bvp)
-			addVertex(*vp, vert, to_camera);
+			addVertex(vp, vert, to_camera);
 		for (auto& uv : mesh.buv)
 			addUV(uv);
 		for (auto& normal : mesh.bpn)
@@ -330,7 +330,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport * 
 		Face face;
 		mi.fbegin(thread_number);
 		for (; mi.fnext(thread_number, face); ) {
-			addFace(*vp, face);
+			addFace(vp, face);
 		}
 //		for (auto& face : mesh.faces)
 //			addFace(face);
@@ -352,7 +352,7 @@ void Pipeline::render_thread(const int thread_number)
 		db->clear(tilerect);
 		cb->clear(tilerect);
 		for (int ti = 0; ti < threads; ti++) {
-			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, vp, idx.first);
+			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx.first);
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
@@ -364,7 +364,7 @@ void Pipeline::render_thread(const int thread_number)
 void Pipeline::process_thread(const int thread_number){
 	auto& pipe = this->pipes[thread_number];
 	for (auto& mesh : this->meshlist) {
-		pipe.addMeshy(*mesh, camera_inverse, vp);
+		pipe.addMeshy(*mesh, camera_inverse, *vp);
 	}
 	telemetry.mark(thread_number);
 }
@@ -425,7 +425,7 @@ void Pipeline::render()
 
 
 
-void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport * const vp, const int bin_idx)
+void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
 {
 	FlatShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -458,17 +458,17 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-			tex_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+			tex_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
 			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
 			if (1) { //face.mf<26) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				my_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp->width, vp->height, v0.f, v1.f, v2.f);
+				wire_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
 			}
 		}
