@@ -379,9 +379,17 @@ void Pipeline::render_thread(const int thread_number)
 {
 	while (1) {
 		int binnumber = current_bin++;
-		if (binnumber >= bin_index.size()) break;
 
-		auto& idx = bin_index[binnumber].first;
+		int idx;
+		if (0) {
+			// linear order
+			if (binnumber >= pipes[0].binner.bins.size()) break;
+		        idx = binnumber;
+		} else {
+			// use the sort index
+			if (binnumber >= bin_index.size()) break;
+			idx = bin_index[binnumber].first;
+		}
 
 		const irect& tilerect = pipes[0].binner.bins[idx].rect;
 
