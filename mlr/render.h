@@ -36,8 +36,10 @@ struct Tilebin {
 	irect rect;
 	int id;
 	std::vector<PFace> faces;
+	vectorsse<vec4> sv;
 	void reset() {
 		faces.clear();
+		sv.clear();
 	}
 };
 
@@ -45,6 +47,7 @@ class Binner {
 public:
 	void reset(const int cur_width, const int cur_height);
 	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face);
+	void insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3);
 	void sort();
 	void unsort();
 	Binner() :device_height(0), device_width(0) {}
@@ -73,6 +76,8 @@ public:
 	void setup(const int thread_number, const int thread_count);
 
 	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp);
+	void add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3);
+	void build_shadows(const Viewport& vp, const vec4& light_position);
 
 	void reset(const int width, const int height) {
 		vlst.clear();
@@ -156,6 +161,7 @@ public:
 	void render();
 	void render_thread(const int thread_number);
 	void process_thread(const int thread_number);
+	void shadow_thread(const int thread_number, const vec4& light_position);
 
 	void index_bins() {
 		bin_index.clear();

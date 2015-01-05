@@ -22,6 +22,16 @@ const int tile_width_in_subtiles = 16;
 const int tile_height_in_subtiles = 8;
 
 
+__forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
+{
+	return vec4(
+		p.x*l.w - l.x*p.w,
+		p.y*l.w - l.y*p.w,
+		p.z*l.w - l.z*p.w,
+		0);
+}
+
+
 void Binner::reset(const int width, const int height)
 {
 	if (device_width != width  || device_height != height) {
@@ -80,6 +90,32 @@ void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace&
 		for (int tx = tx0; tx <= xlim; tx++) {
 			auto& bin = bins[bin_row_offset + tx];
 			bin.faces.push_back(face);
+		}
+	}
+}
+
+
+void Binner::insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3)
+{
+	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
+	auto pmax = vmin(vmax(p1, vmax(p2, p3)), device_max);
+
+	auto x0 = int(pmin._x());
+	auto y0 = int(pmin._y());
+	auto x1 = int(pmax._x()); // trick: set this to pmin._x()
+	auto y1 = int(pmax._y());
+
+	const int ylim = min(y1 / tileheight, device_height_in_tiles - 1);
+	const int xlim = min(x1 / tilewidth, device_width_in_tiles - 1);
+
+	const int tx0 = x0 / tilewidth;
+	for (int ty = y0 / tileheight; ty <= ylim; ty++) {
+		int bin_row_offset = ty * device_width_in_tiles;
+		for (int tx = tx0; tx <= xlim; tx++) {
+			auto& bin = bins[bin_row_offset + tx];
+			bin.sv.push_back(p1);
+			bin.sv.push_back(p2);
+			bin.sv.push_back(p3);
 		}
 	}
 }
@@ -369,6 +405,12 @@ void Pipeline::process_thread(const int thread_number){
 	telemetry.mark(thread_number);
 }
 
+void Pipeline::shadow_thread(const int thread_number, const vec4& light_position)
+{
+	auto& pipe = this->pipes[thread_number];
+	pipe.build_shadows(*vp, light_position);
+}
+
 
 void Pipeline::workerthread(const int thread_number)
 {
@@ -477,3 +519,130 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 	}//faces
 }
+
+
+void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3)
+{
+	PVertex pv[16];
+	PVertex pb[16];
+	pv[0].p = p1;  pv[0].process(vp);
+	pv[1].p = p2;  pv[1].process(vp);
+	pv[2].p = p3;  pv[2].process(vp);
+	int pvcnt = 3;
+
+	if (pv[0].cf & pv[1].cf & pv[2].cf) return;
+
+	const unsigned required_clipping = pv[0].cf | pv[1].cf | pv[2].cf;
+	if (required_clipping == 0) {
+		// all inside
+		binner.insert_shadow(pv[0].f, pv[1].f, pv[2].f);
+		return;
+	}
+
+	for (int clip_plane=0; clip_plane<5; clip_plane++) {
+		const int planebit = 1 << clip_plane;
+		if (!(required_clipping & planebit)) continue;
+
+		bool we_are_inside;
+		unsigned this_pi = 0;
+		unsigned pbcnt = 0;
+
+		do {
+			const auto next_pi = (this_pi + 1) % pvcnt;
+
+			const auto& this_v = pv[this_pi];
+			const auto& next_v = pv[next_pi];
+
+			if (this_pi == 0) {
+				we_are_inside = Guardband::is_inside(planebit, this_v.c);
+			}
+			bool next_is_inside = Guardband::is_inside(planebit, next_v.c);
+
+			if (we_are_inside) {
+				pb[pbcnt] = pv[this_pi];
+				pbcnt++;
+			}
+
+			if (we_are_inside != next_is_inside) {
+				we_are_inside = !we_are_inside;
+				auto t = Guardband::clipLine(planebit, this_v.c, next_v.c);
+				pb[pbcnt] = clipcalc(vp, this_v, next_v, t);
+				pbcnt++;
+			}
+
+			this_pi = next_pi;
+		} while (this_pi != 0);
+
+		for (unsigned i=0; i<pbcnt; i++) {
+			pv[i] = pb[i];
+		}
+		pvcnt = pbcnt;
+
+		if (pvcnt == 0) break;
+	}
+	if (pvcnt == 0) return;
+
+	for (unsigned a=1; a<pvcnt-1; a++) {
+		binner.insert_shadow(pv[0].f, pv[a].f, pv[a+1].f);
+	}
+}
+
+void Pipedata::build_shadows(const Viewport& vp, const vec4& light_position)
+{
+	for (auto& svmesh : shadowqueue) {
+		const PVertex * const vb = &vlst[svmesh.vbase];
+
+		auto inv_light_position = mat4_mul(svmesh.c2o, light_position);
+		auto inv_light_position_x = inv_light_position.xxxx();
+		auto inv_light_position_y = inv_light_position.yyyy();
+		auto inv_light_position_z = inv_light_position.zzzz();
+
+		for (auto& face : svmesh.mesh->faces) {
+
+			auto light_dir_x = face.px - inv_light_position_x;
+			auto light_dir_y = face.py - inv_light_position_y;
+			auto light_dir_z = face.pz - inv_light_position_z;
+
+			auto dots = (face.nx*light_dir_x + face.ny*light_dir_y + face.nz*light_dir_z);
+			if ( dots._x() > 0 ) {    // facing away from light
+				auto p1 = extrude_to_infinity(vb[face.ivp[0]].p, light_position);
+				auto p2 = extrude_to_infinity(vb[face.ivp[1]].p, light_position);
+				auto p3 = extrude_to_infinity(vb[face.ivp[2]].p, light_position);
+				add_shadow_triangle(vp, p1, p2, p3);
+			} else {               // facing towards lightA
+				vec4 edge_a[3];
+				vec4 edge_b[3];
+				int paircnt = 0;
+				if (dots._y() > 0) {
+					edge_a[paircnt] = vb[face.ivp[1]].p;
+					edge_b[paircnt] = vb[face.ivp[0]].p;
+					paircnt++;
+				}
+				if (dots._z() > 0) {
+					edge_a[paircnt] = vb[face.ivp[2]].p;
+					edge_b[paircnt] = vb[face.ivp[1]].p;
+					paircnt++;
+				}
+				if (dots._w() > 0) {
+					edge_a[paircnt] = vb[face.ivp[0]].p;
+					edge_b[paircnt] = vb[face.ivp[2]].p;
+					paircnt++;
+				}
+				for (int i=0; i<paircnt; i++) {
+					auto& na = edge_a[i];
+					auto& nb = edge_b[i];
+					auto fa = extrude_to_infinity(na, light_position);
+					auto fb = extrude_to_infinity(nb, light_position);
+					add_shadow_triangle(vp, na, nb, fb); // quad na->nb->fb->fa
+					add_shadow_triangle(vp, na, fb, fa);
+				}
+				//front cap
+				auto& c1 = vb[face.ivp[0]].p;
+				auto& c2 = vb[face.ivp[1]].p;
+				auto& c3 = vb[face.ivp[2]].p;
+				add_shadow_triangle(vp, c1, c2, c3);
+			}
+		}
+	}
+}
+
