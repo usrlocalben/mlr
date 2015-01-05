@@ -23,6 +23,7 @@
 #include "rocket.h"
 #include "viewport.h"
 #include "texture.h"
+#include "framestack.h"
 
 using namespace std;
 using boost::format;
@@ -60,6 +61,8 @@ Demo::Demo(Rocket& rocket, TextureStore& texturestore, MeshStore& meshstore, Mat
 	telemetry(telemetry),
 	pipeline(get_cpu_count(), telemetry)
 {
+	fs_init();
+
 	on_resize(0, 0);
 
 	for (int i = 0; i < 64; i++) {
@@ -93,6 +96,8 @@ void Demo::render(
 {
 	if (target_width != config_width || target_height != config_height)
 		on_resize(target_width, target_height);
+
+	fs_reset();
 
 	auto zorp = rocket.getf("zorp");
 	auto cram = rocket.getf("cram");

@@ -89,6 +89,7 @@
     <ClInclude Include="clip.h" />
     <ClInclude Include="demo.h" />
     <ClInclude Include="dib24.h" />
+    <ClInclude Include="framestack.h" />
     <ClInclude Include="gason.h" />
     <ClInclude Include="stats.h" />
     <ClInclude Include="jsonfile.h" />
@@ -137,6 +138,7 @@
     <ClCompile Include="canvas.cpp" />
     <ClCompile Include="demo.cpp" />
     <ClCompile Include="dib24.cpp" />
+    <ClCompile Include="framestack.cpp" />
     <ClCompile Include="gason.cpp" />
     <ClCompile Include="boot.cpp" />
     <ClCompile Include="jsonfile.cpp" />

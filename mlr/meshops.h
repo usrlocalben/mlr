@@ -4,6 +4,7 @@
 
 #include "mesh.h"
 #include "../mtwist/mtwist.h"
+#include "framestack.h"
 
 //local rotate x,y,z
 //scale x,y,z
@@ -22,10 +23,10 @@ public:
 	virtual bool shadows_enabled() {
 		return false;
 	}
-	__forceinline void* operator new[]   (size_t x){ return _aligned_malloc(x, 16); }
-	__forceinline void* operator new     (size_t x){ return _aligned_malloc(x, 16); }
-	__forceinline void  operator delete[](void*  x) { if (x) _aligned_free(x); }
-	__forceinline void  operator delete  (void*  x) { if (x) _aligned_free(x); }
+	__forceinline void* operator new[]   (size_t x){ return fs_alloc(x); }
+	__forceinline void* operator new     (size_t x){ return fs_alloc(x); }
+	__forceinline void  operator delete[](void*  x) {}
+	__forceinline void  operator delete  (void*  x) {}
 };
 
 
