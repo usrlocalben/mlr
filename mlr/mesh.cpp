@@ -123,8 +123,8 @@ void Mesh::assignEdges()
 	for (auto& face : faces) {
 
 		const auto& adj1 = faces[face.edgefaces[0]];
-		const auto& adj2 = faces[face.edgefaces[0]];
-		const auto& adj3 = faces[face.edgefaces[0]];
+		const auto& adj2 = faces[face.edgefaces[1]];
+		const auto& adj3 = faces[face.edgefaces[2]];
 
 		const auto& pi = bvp[ face.ivp[0] ];
 		const auto& p1 = bvp[ adj1.ivp[0] ];
