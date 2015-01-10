@@ -22,7 +22,8 @@ const int tile_width_in_subtiles = 16;
 const int tile_height_in_subtiles = 8;
 
 //#define SLEEP_METHOD
-#define SLEEP_METHOD Sleep(0)
+#define SLEEP_METHOD SleepEx(0,true)
+//#define SLEEP_METHOD Sleep(0)
 //#define SLEEP_METHOD Sleep(1)
 
 __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
@@ -443,8 +444,8 @@ void Pipeline::shadow_thread(const int thread_number)
 void Pipeline::workerthread(const int thread_number)
 {
 	bind_to_cpu(thread_number);
-
-	auto& signal_start = pipes[thread_number].my_signal;
+	auto& pipe = pipes[thread_number];
+	auto& signal_start = pipe.my_signal;
 
 	bool done = false;
 	while (!done) {
@@ -467,20 +468,15 @@ void Pipeline::workerthread(const int thread_number)
 	}
 }
 
+#define START_WORKERS(a) for (int _i=1; _i<this->threads; _i++) pipes[_i].my_signal = (a)
+#define JOIN_WORKERS for(int _i=1; _i<this->threads; _i++) while(pipes[_i].my_signal!=0) SLEEP_METHOD
+
 void Pipeline::render()
 {
-	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 1;
-	process_thread(0);
-	for (int i = 1; i < this->threads; i++) {
-		while (pipes[i].my_signal != 0) SLEEP_METHOD;
-	}
+	START_WORKERS(1); process_thread(0); JOIN_WORKERS;
 	telemetry.inc();
 
-	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 3;
-	shadow_thread(0);
-	for (int i = 1; i < this->threads; i++) {
-		while (pipes[i].my_signal != 0) SLEEP_METHOD;
-	}
+	START_WORKERS(3); shadow_thread(0); JOIN_WORKERS;
 	telemetry.inc();
 
 	index_bins();
@@ -488,11 +484,7 @@ void Pipeline::render()
 	telemetry.inc();
 
 	current_bin = 0;
-	for (int i = 1; i < this->threads; i++) pipes[i].my_signal = 2;
-	render_thread(0);
-	for (int i = 1; i < this->threads; i++) {
-		while (pipes[i].my_signal != 0) SLEEP_METHOD;
-	}
+	START_WORKERS(2); render_thread(0); JOIN_WORKERS;
 	telemetry.inc();
 }
 
