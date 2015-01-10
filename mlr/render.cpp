@@ -270,9 +270,11 @@ void Pipedata::addUV(const vec4& src)
 	new_tcnt++;
 }
 
-void Pipedata::addLight(const Light& light)
+void Pipedata::addLight(const mat4& camera_inverse, const Light& light)
 {
-	llst.push_back(light);
+	Light l2 = light;
+	l2.position = mat4_mul(camera_inverse, light.position);
+	llst.push_back(l2);
 }
 
 __forceinline void PVertex::process(const Viewport& vp)
@@ -416,7 +418,7 @@ void Pipeline::render_thread(const int thread_number)
 void Pipeline::addLight(const Light& light)
 {
 	for (int i = 0; i < threads; i++) {
-		this->pipes[i].addLight(light);
+		this->pipes[i].addLight(camera_inverse, light);
 	}
 }
 
@@ -533,7 +535,7 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
-			if (1) { //face.mf<26) {
+			if (1) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
 				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
