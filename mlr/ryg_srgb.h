@@ -115,18 +115,18 @@ static uint8 float_to_srgb8(float in)
 static __forceinline __m128i float_to_rgb8_SSE2(__m128 f)
 {
 #define SSE_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
-#define CONST(name) *(const __m128i *)&name
-#define CONSTF(name) *(const __m128 *)&name
+#define _CONST(name) *(const __m128i *)&name
+#define _CONSTF(name) *(const __m128 *)&name
 
     SSE_CONST4(c_almostone, 0x3f7fffff);
-	static const __m128 myscale = _mm_set1_ps(255.0f );
+	static const __m128 myscale = _mm_set1_ps(255.0f);
 
 	// clamp
 //	__m128 zero = _mm_setzero_ps();
 //	__m128 myscale = _mm_set1_ps(255.0f);
 
 //	__m128 clamp1 = _mm_max_ps(f,zero);
-	__m128 clamp2 = _mm_min_ps(f,CONSTF(c_almostone));
+	__m128 clamp2 = _mm_min_ps(f,_CONSTF(c_almostone));
 
 	//clamp2 = _mm_sqrt_ps(clamp2);
 
@@ -134,6 +134,10 @@ static __forceinline __m128i float_to_rgb8_SSE2(__m128 f)
 
 	__m128i result = _mm_cvtps_epi32( scaled );
 	return result;
+
+#undef SSE_CONST4
+#undef _CONST
+#undef _CONSTF
 }
 
 
@@ -141,8 +145,8 @@ static __forceinline __m128i float_to_rgb8_SSE2(__m128 f)
 static __forceinline __m128i float_to_srgb8_SSE2(__m128 f)
 {
 #define SSE_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
-#define CONST(name) *(const __m128i *)&name
-#define CONSTF(name) *(const __m128 *)&name
+#define _CONST(name) *(const __m128i *)&name
+#define _CONSTF(name) *(const __m128 *)&name
 
     SSE_CONST4(c_almostone, 0x3f7fffff);
     SSE_CONST4(c_lutthresh, 0x3b800000);
@@ -156,11 +160,11 @@ static __forceinline __m128i float_to_srgb8_SSE2(__m128 f)
     // Initial clamp
     __m128 zero = _mm_setzero_ps();
     __m128 clamp1 = _mm_max_ps(f, zero); // limit to [0,1-eps] - also nukes NaNs
-    __m128 clamp2 = _mm_min_ps(clamp1, CONSTF(c_almostone));
+    __m128 clamp2 = _mm_min_ps(clamp1, _CONSTF(c_almostone));
 
     // Table index
     __m128i tabidx1 = _mm_srli_epi32(_mm_castps_si128(clamp2), 20);
-    __m128i tabidx2 = _mm_and_si128(tabidx1, CONST(c_tabmask));
+    __m128i tabidx2 = _mm_and_si128(tabidx1, _CONST(c_tabmask));
     _mm_store_si128(&temp, tabidx2);
 
     // Table lookup
@@ -170,19 +174,19 @@ static __forceinline __m128i float_to_srgb8_SSE2(__m128 f)
     temp.m128i_u32[3] = fp32_to_srgb8_tab3[temp.m128i_u32[3]];
 
     // Linear part of ramp
-    __m128 linear1 = _mm_mul_ps(clamp2, CONSTF(c_linearsc));
+    __m128 linear1 = _mm_mul_ps(clamp2, _CONSTF(c_linearsc));
     __m128i linear2 = _mm_cvtps_epi32(linear1);
 
     // Table finisher
     __m128i tabval = _mm_load_si128(&temp);
     __m128i tabmult1 = _mm_srli_epi32(_mm_castps_si128(clamp2), 12);
-    __m128i tabmult2 = _mm_and_si128(tabmult1, CONST(c_mantmask));
-    __m128i tabmult3 = _mm_or_si128(tabmult2, CONST(c_topscale));
+    __m128i tabmult2 = _mm_and_si128(tabmult1, _CONST(c_mantmask));
+    __m128i tabmult3 = _mm_or_si128(tabmult2, _CONST(c_topscale));
     __m128i tabprod = _mm_madd_epi16(tabval, tabmult3);
     __m128i tabshifted = _mm_srli_epi32(tabprod, 16);
 
     // Combine linear+table
-    __m128 b_uselin = _mm_cmplt_ps(clamp2, CONSTF(c_lutthresh)); // use linear results
+    __m128 b_uselin = _mm_cmplt_ps(clamp2, _CONSTF(c_lutthresh)); // use linear results
     __m128i merge1 = _mm_and_si128(linear2, _mm_castps_si128(b_uselin));
     __m128i merge2 = _mm_andnot_si128(_mm_castps_si128(b_uselin), tabshifted);
     __m128i result = _mm_or_si128(merge1, merge2);
@@ -190,15 +194,15 @@ static __forceinline __m128i float_to_srgb8_SSE2(__m128 f)
     return result;
 
 #undef SSE_CONST4
-#undef CONST
-#undef CONSTF
+#undef _CONST
+#undef _CONSTF
 }
 
 static __forceinline __m128i float_to_srgb8_var2_SSE2(__m128 f)
 {
 #define SSE_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
-#define CONST(name) *(const __m128i *)&name
-#define CONSTF(name) *(const __m128 *)&name
+#define _CONST(name) *(const __m128i *)&name
+#define _CONSTF(name) *(const __m128 *)&name
 
     SSE_CONST4(c_clampmin, (127 - 13) << 23);
     SSE_CONST4(c_almostone, 0x3f7fffff);
@@ -209,8 +213,8 @@ static __forceinline __m128i float_to_srgb8_var2_SSE2(__m128 f)
     __m128i temp; // temp value (on stack)
 
     // Initial clamp
-    __m128 clamp1 = _mm_max_ps(f, CONSTF(c_clampmin)); // limit to [clampmin,1-eps] - also nuke NaNs
-    __m128 clamp2 = _mm_min_ps(clamp1, CONSTF(c_almostone));
+    __m128 clamp1 = _mm_max_ps(f, _CONSTF(c_clampmin)); // limit to [clampmin,1-eps] - also nuke NaNs
+    __m128 clamp2 = _mm_min_ps(clamp1, _CONSTF(c_almostone));
 
     // Table index
     __m128i tabidx = _mm_srli_epi32(_mm_castps_si128(clamp2), 20);
@@ -225,16 +229,16 @@ static __forceinline __m128i float_to_srgb8_var2_SSE2(__m128 f)
     // Finisher
     __m128i tabval = _mm_load_si128(&temp);
     __m128i tabmult1 = _mm_srli_epi32(_mm_castps_si128(clamp2), 12);
-    __m128i tabmult2 = _mm_and_si128(tabmult1, CONST(c_mantmask));
-    __m128i tabmult3 = _mm_or_si128(tabmult2, CONST(c_topscale));
+    __m128i tabmult2 = _mm_and_si128(tabmult1, _CONST(c_mantmask));
+    __m128i tabmult3 = _mm_or_si128(tabmult2, _CONST(c_topscale));
     __m128i tabprod = _mm_madd_epi16(tabval, tabmult3);
     __m128i result = _mm_srli_epi32(tabprod, 16);
 
     return result;
 
 #undef SSE_CONST4
-#undef CONST
-#undef CONSTF
+#undef _CONST
+#undef _CONSTF
 }
 
 
