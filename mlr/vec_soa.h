@@ -155,7 +155,7 @@ __forceinline vec4 ddy(const vec4& a)
 template<int e>
 __forceinline void fwidth(const vec4 * const __restrict src, vec4 * const __restrict out)
 {
-	for ( int i=0; i<e; i++ )
+	for (int i=0; i<e; i++)
 		dst[i] = abs(ddx(s[i])) + abs(ddy(s[i]));
 }
 

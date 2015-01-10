@@ -112,8 +112,8 @@ class MeshStore {
 public:
 
 	int index_of(const std::string& name) const {
-		for ( unsigned i=0; i<store.size(); i++ ) {
-			if ( store[i].name == name ) {
+		for (unsigned i=0; i<store.size(); i++) {
+			if (store[i].name == name) {
 				return i;
 			}
 		}

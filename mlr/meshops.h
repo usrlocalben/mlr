@@ -202,7 +202,7 @@ public:
 		mat4 in_mat;
 
 		in.begin(t);
-		while ( in.next(t, in_mat) ) {
+		while (in.next(t, in_mat)) {
 			for (unsigned i=0; i<8; i++ ){
 				vec4 xb = mat4_mul(in_mat, mesh->bbox[i]);
 				bbox_min = vmin(bbox_min, xb);

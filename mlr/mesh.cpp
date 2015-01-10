@@ -44,11 +44,11 @@ void Mesh::calcBounds()
 void Mesh::calcNormals()
 {
 	bvn.clear();
-	for ( auto& vertex : bvp ) {
+	for (auto& vertex : bvp) {
 		bvn.push_back(vec4::zero());
 	}
 
-	for ( auto& face : faces ) {
+	for (auto& face : faces) {
 		vec4 a = bvp[face.ivp[2]] - bvp[face.ivp[0]];
 		vec4 b = bvp[face.ivp[1]] - bvp[face.ivp[0]];
 		vec4 n = cross(b,a);
@@ -59,7 +59,7 @@ void Mesh::calcNormals()
 		bvn[face.ivp[2]] += n;
 	}
 
-	for ( auto& vertex_normal : bvn ) {
+	for (auto& vertex_normal : bvn) {
 		vertex_normal = normalized(vertex_normal);
 	}
 }
@@ -72,7 +72,7 @@ struct _edgedata {
 
 unsigned make_edge_key(const unsigned vidx1, const unsigned vidx2)
 {
-	if ( vidx1 < vidx2 )
+	if (vidx1 < vidx2)
 		return vidx1<<16 | vidx2;
 	else
 		return vidx2<<16 | vidx1;
@@ -87,7 +87,7 @@ void Mesh::assignEdges()
 
 	for (int i=0; i<faces.size(); i++) {
 		Face& face = faces[i];
-		for ( int ei=0; ei<3; ei++ ) {
+		for (int ei=0; ei<3; ei++) {
 			const unsigned edgekey = make_edge_key(face.ivp[ei], face.ivp[(ei+1)%3]);
 			if (edgemap.count(edgekey) == 0) {
 				int this_edge_id = next_id++;
@@ -108,7 +108,7 @@ void Mesh::assignEdges()
 
 	for (int i=0; i<faces.size(); i++) {
 		Face& face = faces[i];
-		for ( int ei=0; ei<3; ei++ ) {
+		for (int ei=0; ei<3; ei++) {
 			const unsigned edgekey = make_edge_key(face.ivp[ei], face.ivp[(ei+1)%3]);
 			auto& edgedata = edgemap[edgekey];
 			if (edgedata.face_id_b == -1) {
@@ -158,8 +158,8 @@ void MaterialStore::print() const
 
 
 int MaterialStore::find(const std::string& name) const {
-	for ( unsigned i=0; i<store.size(); i++ ) {
-		if ( store[i].name == name )
+	for (unsigned i=0; i<store.size(); i++) {
+		if (store[i].name == name)
 			return i;
 	}
 	return 0;

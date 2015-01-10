@@ -54,7 +54,7 @@ vector<string> file_to_lines(const string& filename)
 	vector<string> data;
 
 	string ln;
-	while ( !getline(f,ln).eof() ) {
+	while (!getline(f,ln).eof()) {
 		data.push_back(ln);
 	}
 
@@ -121,7 +121,7 @@ MaterialStore MtlLoader::load(const string& fn)
 	auto lines = file_to_lines(fn);
 
 	m.reset();
-	for ( auto& line : lines ) {
+	for (auto& line : lines) {
 
 		auto tmp = line.substr(0, line.find('#'));
 		trim(tmp);
@@ -173,7 +173,7 @@ std::tuple<Mesh,MaterialStore> loadObj(const string& prepend, const string& fn)
 
 	mesh.name = fn;
 
-	for ( auto& line : lines ) {
+	for (auto& line : lines) {
 
 		auto tmp = line.substr(0, line.find('#'));
 		trim(tmp);
