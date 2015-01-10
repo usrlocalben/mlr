@@ -107,25 +107,26 @@ unsigned get_cpu_count() {
 	//return 1;
 	SYSTEM_INFO si = { 0, };
 	GetSystemInfo(&si);
-	return si.dwNumberOfProcessors;
+	if (1)
+		return si.dwNumberOfProcessors / 2;
+	else
+		return si.dwNumberOfProcessors;
 }
 
 
-void sse_speedup()
+void sse_configure()
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);  // SSE flush-denormals-to-zero
 	_mm_setcsr(_mm_getcsr() | 0x8040);           // SSE2 denormals-are-zero
 }
 
 
-void bind_to_cpu(const int cpu)
+void bind_to_cpu(const unsigned cpu)
 {
+	const HANDLE self = GetCurrentThread();
 	if (1) {
-		const HANDLE self = GetCurrentThread();
-		const DWORD_PTR pmask = SetThreadAffinityMask(self, 1 << (cpu*2));
-		if (0) {
-			const DWORD_PTR pmask2 = SetThreadAffinityMask(self, 1<<(cpu*2));
-			cout << "original pmask was " << format("%x") % pmask << ", new pmask is " << format("%x") % pmask2 << endl;
-		}
+		DWORD_PTR pmask = SetThreadAffinityMask(self, 1 << (cpu*2));
+	} else {
+		DWORD_PTR pmask = SetThreadAffinityMask(self, 1 << cpu);
 	}
 }

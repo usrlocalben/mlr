@@ -120,7 +120,6 @@ int WINAPI _tWinMain(HINSTANCE hInst, HINSTANCE h0, LPTSTR lpCmdLine, int nCmdSh
 	}
 
 	if (run_demo) {
-//		sse_speedup();
 		Application app;
 		if (run_tdfmode) {
 			hackmode_enable = 1;

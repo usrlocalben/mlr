@@ -17,7 +17,7 @@ std::vector<char> file_get_contents(const std::string& fn);
 void file_get_contents(const std::string& fn, std::vector<char>& buf);
 
 unsigned get_cpu_count();
-void sse_speedup();
-void bind_to_cpu(const int cpu);
+void sse_configure();
+void bind_to_cpu(const unsigned cpu);
 
 #endif //__UTILS_H

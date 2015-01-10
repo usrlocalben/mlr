@@ -450,7 +450,7 @@ void Pipeline::workerthread(const int thread_number)
 
 		int job_to_do = signal_start;
 
-		sse_speedup();
+		sse_configure();
 
 		if (job_to_do == -1) {
 			done = true;
