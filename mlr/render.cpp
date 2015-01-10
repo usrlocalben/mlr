@@ -57,7 +57,7 @@ void Binner::onResize()
 	device_width_in_tiles = (device_width + tilewidth - 1) / tilewidth;
 	device_height_in_tiles = (device_height + tileheight - 1) / tileheight;
 
-	device_max = vec4(device_width, device_height, 0, 0);
+	device_max = vec4{float(device_width), float(device_height), 0, 0};
 
 	bins.clear();
 	int i = 0;
