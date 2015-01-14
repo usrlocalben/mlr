@@ -24,10 +24,7 @@ struct PVertex {
 	vec4 f; // fixed 2d x,y,"z",1overw
 	vec4 p; // eyespace
 	vec4 c; // clipspace
-
-	vec4 n; // vertex normal
-
-	void process(const Viewport& vp);
+//	vec4 n; // vertex_normal
 };
 
 

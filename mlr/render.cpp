@@ -278,24 +278,23 @@ void Pipedata::addLight(const mat4& camera_inverse, const Light& light)
 	llst.push_back(l2);
 }
 
-__forceinline void PVertex::process(const Viewport& vp)
+__forceinline PVertex point_to_PVertex(const Viewport& vp, const vec4& p)
 {
-	this->c = vp.to_clip_space(this->p);
-	vec4 s = vp.to_screen_space(this->c);
+	auto point_in_clipspace = vp.to_clip_space(p);
+	auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
 
-	float one_over_w = 1 / s._w();
-	this->f = s / s.wwww();
-	this->f.w = one_over_w;
+	float one_over_w = 1 / point_in_screenspace._w();
+	auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
+	point_in_devicespace.w = one_over_w;
 
-	this->cf = Guardband::clipPoint(this->c);
+	auto clipflags = Guardband::clipPoint(point_in_clipspace);
+
+	return{ clipflags, point_in_devicespace, p, point_in_clipspace };
 }
 
 __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, const mat4& m)
 {
-	PVertex pv;
-	pv.p = mat4_mul(m, src);
-	pv.process(vp);
-	vlst.push_back(pv);
+	vlst.push_back(point_to_PVertex(vp, mat4_mul(m, src)));
 	new_vcnt++;
 }
 
@@ -306,7 +305,7 @@ PVertex Pipedata::clipcalc(const Viewport& vp, const PVertex& a, const PVertex& 
 	n.p = lerp(a.p, b.p, t);
 	n.c = lerp(a.c, b.c, t);
 	vec4 s = vp.to_screen_space(n.c);
-	n.n = lerp(a.n, b.n, t);
+//	n.n = lerp(a.n, b.n, t); vertex_normal
 
 	float one_over_w = 1 / s.w;
 	n.f = s / s.wwww();
@@ -548,9 +547,10 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 {
 	PVertex pv[16];
 	PVertex pb[16];
-	pv[0].p = p1;  pv[0].process(vp);
-	pv[1].p = p2;  pv[1].process(vp);
-	pv[2].p = p3;  pv[2].process(vp);
+	pv[0] = point_to_PVertex(vp, p1);
+	pv[1] = point_to_PVertex(vp, p2);
+	pv[2] = point_to_PVertex(vp, p3);
+
 	int pvcnt = 3;
 
 	if (pv[0].cf & pv[1].cf & pv[2].cf) return;
