@@ -152,10 +152,10 @@ private:
 
 
 template<typename T>
-using vectorsse = std::vector < T, aligned_allocator<T, 16> >;
+using vectorsse = std::vector < T, aligned_allocator<T, 64> >;
 
 template<typename T>
-using listsse = std::list < T, aligned_allocator<T, 16> > ;
+using listsse = std::list < T, aligned_allocator<T, 64> > ;
 
 /*
 int main()
