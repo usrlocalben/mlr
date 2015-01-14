@@ -89,6 +89,7 @@
     <ClInclude Include="clip.h" />
     <ClInclude Include="demo.h" />
     <ClInclude Include="dib24.h" />
+    <ClInclude Include="fragment.h" />
     <ClInclude Include="framestack.h" />
     <ClInclude Include="gason.h" />
     <ClInclude Include="stats.h" />
