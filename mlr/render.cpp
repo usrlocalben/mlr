@@ -45,7 +45,7 @@ void Binner::reset(const int width, const int height)
 	}
 
 	for (auto& bin : bins) {
-		bin.reset();
+		bin.clear();
 	}
 }
 

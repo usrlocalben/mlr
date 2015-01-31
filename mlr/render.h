@@ -34,7 +34,7 @@ struct Tilebin {
 	int id;
 	std::vector<PFace> faces;
 	vectorsse<vec4> sv;
-	void reset() {
+	void clear() {
 		faces.clear();
 		sv.clear();
 	}
