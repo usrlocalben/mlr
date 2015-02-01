@@ -92,6 +92,7 @@
     <ClInclude Include="fragment.h" />
     <ClInclude Include="framestack.h" />
     <ClInclude Include="gason.h" />
+    <ClInclude Include="mcube.h" />
     <ClInclude Include="stats.h" />
     <ClInclude Include="jsonfile.h" />
     <ClInclude Include="mesh.h" />
@@ -143,6 +144,7 @@
     <ClCompile Include="gason.cpp" />
     <ClCompile Include="boot.cpp" />
     <ClCompile Include="jsonfile.cpp" />
+    <ClCompile Include="mcube.cpp" />
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="obj.cpp" />
