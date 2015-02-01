@@ -24,9 +24,15 @@ struct Tilebin {
 	int id;
 	std::vector<PFace> faces;
 	vectorsse<vec4> sv;
+
+	// glVertex api
+	vectorsse<vec4> gldata;
+	std::vector<unsigned char> glface;
+
 	void clear() {
 		faces.clear();
 		sv.clear();
+		gldata.clear();
 	}
 };
 
@@ -35,6 +41,14 @@ public:
 	void reset(const int cur_width, const int cur_height);
 	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face);
 	void insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3);
+	void insert_gltri(
+		const Viewport& vp,
+		const vec4 * const pv,
+		const vec4 * const pn,
+		const vec4 * const pc,
+		const vec4 * const pt,
+		int i0, int i1, int i2,
+		const int material_id);
 	void sort();
 	void unsort();
 	Binner() :device_height(0), device_width(0) {}
@@ -82,6 +96,7 @@ public:
 	void addLight(const mat4& camera_inverse, const Light& light);
 	Binner binner;
 	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
+	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 
@@ -119,6 +134,46 @@ private:
 	int root_count;
 
 	vectorsse<ShadowMesh> shadowqueue;
+
+
+	// glVertex() api
+	vec4 cur_nor;
+	vec4 cur_col;
+	vec4 cur_tex;
+	int cur_mat;
+	int vertex_idx;
+	vec4 tri_nor[16];
+	vec4 tri_col[16];
+	vec4 tri_tex[16];
+	vec4 tri_eye[16];
+	const Viewport * batch_vp;
+public:
+	void glBegin(const Viewport& vp) {
+		vertex_idx = 0;
+		batch_vp = &vp;
+		cur_mat = 0;
+	}
+	void glEnd() {
+		//assert(vertex_idx==0);
+	}
+	__forceinline void glColor(const vec4& v) { cur_col = v; }
+	__forceinline void glNormal(const vec4& v) { cur_nor = v; }
+	__forceinline void glTexture(const vec4& v) { cur_tex = v; }
+	__forceinline void glMaterial(const int v) { cur_mat = v; }
+	__forceinline void glVertex(const vec4& v) {
+		//assert that we are in a batch
+		tri_nor[vertex_idx] = cur_nor;
+		tri_col[vertex_idx] = cur_col;
+		tri_tex[vertex_idx] = cur_tex;
+		tri_eye[vertex_idx] = v;  // early clip optimization?
+		vertex_idx++;
+		if (vertex_idx == 3) {
+		    process_gltri(*batch_vp, cur_mat);
+		    vertex_idx = 0;
+		}
+	}
+private:
+	void process_gltri(const Viewport& vp, const int material_id);
 };
 
 
@@ -183,7 +238,9 @@ public:
 		this->target = target;
 		this->target_width = target_width;
 	}
-
+	Pipedata * getPipe() {
+		return &this->pipes[0];
+	}
 
 private:
 	const int threads;

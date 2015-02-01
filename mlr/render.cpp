@@ -124,6 +124,77 @@ void Binner::insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3)
 }
 
 
+void Binner::insert_gltri(
+	const Viewport& vp,
+	const vec4 * const pv,
+	const vec4 * const pn,
+	const vec4 * const pc,
+	const vec4 * const pt,
+	int i0, int i1, int i2,
+	const int material_id
+)
+{
+	auto p1 = vp.eye_to_device(pv[i0]);
+	auto p2 = vp.eye_to_device(pv[i1]);
+	auto p3 = vp.eye_to_device(pv[i2]);
+
+	const auto d31 = p3 - p1;
+	const auto d21 = p2 - p1;
+	const float area = d31.x*d21.y - d31.y*d21.x;
+	auto backfacing = area < 0;
+	if (backfacing) return; // cull
+	/*
+	if (backfacing) {
+		std::swap(p1, p3);
+		std::swap(i0, i2);
+	}
+	*/
+
+	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
+	auto pmax = vmin(vmax(p1, vmax(p2, p3)), device_max);
+
+	auto x0 = int(pmin._x());
+	auto y0 = int(pmin._y());
+	auto x1 = int(pmax._x()); // trick: set this to pmin._x()
+	auto y1 = int(pmax._y());
+
+	const int ylim = min(y1 / tileheight, device_height_in_tiles - 1);
+	const int xlim = min(x1 / tilewidth, device_width_in_tiles - 1);
+
+	const int tx0 = x0 / tilewidth;
+	for (int ty = y0 / tileheight; ty <= ylim; ty++) {
+		int bin_row_offset = ty * device_width_in_tiles;
+		for (int tx = tx0; tx <= xlim; tx++) {
+			auto& bin = bins[bin_row_offset + tx];
+
+			unsigned char facedata = material_id;
+			if (backfacing) facedata |= 0x80;
+			bin.glface.push_back(facedata);
+
+			bin.gldata.push_back(p1);
+			bin.gldata.push_back(pv[i0]);
+			bin.gldata.push_back(pn[i0]);
+			bin.gldata.push_back(pc[i0]);
+			bin.gldata.push_back(pt[i0]);
+
+			bin.gldata.push_back(p2);
+			bin.gldata.push_back(pv[i1]);
+			bin.gldata.push_back(pn[i1]);
+			bin.gldata.push_back(pc[i1]);
+			bin.gldata.push_back(pt[i1]);
+
+			bin.gldata.push_back(p3);
+			bin.gldata.push_back(pv[i2]);
+			bin.gldata.push_back(pn[i2]);
+			bin.gldata.push_back(pc[i2]);
+			bin.gldata.push_back(pt[i2]);
+		}
+	}
+}
+
+
+
+
 Pipeline::Pipeline(const int threads, class Telemetry& telemetry)
 	:threads(threads), telemetry(telemetry)
 {
@@ -399,6 +470,7 @@ void Pipeline::render_thread(const int thread_number)
 		cb->clear(tilerect);
 		for (int ti = 0; ti < threads; ti++) {
 			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
+			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
@@ -528,8 +600,6 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
 			}
 		}
-
-		//		cout << "v1:" << v0.f << ", v2:" << v1.f << ", v3:" << v2.f << endl;
 
 	}//faces
 }
@@ -676,5 +746,170 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id)
 			}
 		}
 	}
+}
+
+
+void Pipedata::process_gltri(const Viewport& vp, const int material_id)
+{
+	unsigned char cf[3];
+
+	vec4 pb_v[16];
+	vec4 pb_n[16];
+	vec4 pb_c[16];
+	vec4 pb_t[16];
+	for (int i=0; i<3; i++) {
+		auto point_in_clipspace = vp.eye_to_clip(tri_eye[i]);
+		cf[i] = Guardband::clipPoint(point_in_clipspace);
+	}
+	int pvcnt = 3;
+
+
+	if (cf[0] & cf[1] & cf[2]) return;
+
+	const unsigned required_clipping = cf[0] | cf[1] | cf[2];
+	if (required_clipping == 0) {
+		// all inside
+		binner.insert_gltri(vp, tri_eye, tri_nor, tri_col, tri_tex, 0, 1, 2, material_id);
+		return;
+	}
+
+	for (int clip_plane=0; clip_plane<5; clip_plane++) {
+		const int planebit = 1 << clip_plane;
+		if (!(required_clipping & planebit)) continue;
+
+		bool we_are_inside;
+		unsigned this_pi = 0;
+		auto this_v = tri_eye[this_pi];
+		auto this_n = tri_nor[this_pi];
+		auto this_c = tri_col[this_pi];
+		auto this_t = tri_tex[this_pi];
+		auto this_clip = vp.eye_to_clip(this_v);
+		unsigned pbcnt = 0;
+
+		do {
+			const auto next_pi = (this_pi + 1) % pvcnt;
+
+			const auto next_v = tri_eye[next_pi];
+			const auto next_n = tri_nor[next_pi];
+			const auto next_c = tri_col[next_pi];
+			const auto next_t = tri_tex[next_pi];
+			const auto next_clip = vp.eye_to_clip(next_v);
+
+			if (this_pi == 0) {
+				we_are_inside = Guardband::is_inside(planebit, this_clip);
+			}
+			bool next_is_inside = Guardband::is_inside(planebit, next_clip);
+
+			if (we_are_inside) {
+				pb_v[pbcnt] = this_v;
+				pb_n[pbcnt] = this_n;
+				pb_c[pbcnt] = this_c;
+				pb_t[pbcnt] = this_t;
+				pbcnt++;
+			}
+
+			if (we_are_inside != next_is_inside) {
+				we_are_inside = !we_are_inside;
+				auto t = Guardband::clipLine(planebit, this_clip, next_clip);
+				pb_v[pbcnt] = lerp(this_v, next_v, t);
+				pb_n[pbcnt] = lerp(this_n, next_n, t);
+				pb_c[pbcnt] = lerp(this_c, next_c, t);
+				pb_t[pbcnt] = lerp(this_t, next_t, t);
+				pbcnt++;
+			}
+
+			this_pi = next_pi;
+			this_v = next_v;
+			this_n = next_n;
+			this_c = next_c;
+			this_t = next_t;
+			this_clip = next_clip;
+		} while (this_pi != 0);
+
+		for (unsigned i=0; i<pbcnt; i++) {
+			tri_eye[i] = pb_v[i];
+			tri_nor[i] = pb_n[i];
+			tri_col[i] = pb_c[i];
+			tri_tex[i] = pb_t[i];
+		}
+		pvcnt = pbcnt;
+
+		if (pvcnt == 0) break;
+	}
+	if (pvcnt == 0) return;
+
+	for (unsigned a=1; a<pvcnt-1; a++) {
+		binner.insert_gltri(vp, tri_eye, tri_nor, tri_col, tri_tex, 0, a, a+1, material_id);
+	}
+}
+
+
+void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
+{
+	FlatShader my_shader;
+	my_shader.setColorBuffer(cb);
+	my_shader.setDepthBuffer(db);
+	my_shader.setColor(vec4(1, 0.66, 0.33, 0));
+
+	WireShader wire_shader;
+	wire_shader.setColorBuffer(cb);
+	wire_shader.setDepthBuffer(db);
+	wire_shader.setColor(vec4(1, 0.66, 0.33, 0));
+
+#define I_FINAL 0
+#define I_POINT 1
+#define I_NORMAL 2
+#define I_COLOR 3
+#define I_TEXTURE 4
+
+	auto& bin = binner.bins[bin_idx];
+	int di = 0;
+	int fi = 0;
+	while (di < bin.gldata.size()) {
+
+		auto facedata = bin.glface[fi];
+		bool backfacing = (facedata & 0x80) > 0;
+		int material_id = facedata & 0x7f;
+
+		if (backfacing) continue;
+
+		const auto& v0_f = bin.gldata[di+0+I_FINAL];
+		const auto& v1_f = bin.gldata[di+5+I_FINAL];
+		const auto& v2_f = bin.gldata[di+10+I_FINAL];
+
+		const auto& v0_t = bin.gldata[di+0+I_TEXTURE];
+		const auto& v1_t = bin.gldata[di+5+I_TEXTURE];
+		const auto& v2_t = bin.gldata[di+10+I_TEXTURE];
+
+		Material& mat = materialstore.store[material_id];
+
+		if (mat.imagename != string("")) {
+			const auto tex = texturestore.find(mat.imagename);
+			//			const auto texunit = ts_512i(&tex->b[0]);
+			//			auto tex_shader = TextureShader<ts_512i>(texunit);
+
+			const auto texunit = ts_512_mipmap(&tex->b[0]);
+			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
+			tex_shader.setColorBuffer(cb);
+			tex_shader.setDepthBuffer(db);
+			tex_shader.setUV(v0_t, v1_t, v2_t);
+			tex_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+			draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
+		}
+		else {
+			if (1) {
+				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				my_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
+			} else {
+				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				wire_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
+			}
+		}
+
+		di += 15;
+		fi += 1;
+	}//gldata
 }
 
