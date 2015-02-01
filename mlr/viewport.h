@@ -21,7 +21,7 @@ struct Viewport
 
 	__forceinline vec4 clip_to_device(const vec4& point_in_clipspace) const {
 		auto point_in_screenspace = clip_to_screen(point_in_clipspace);
-		float one_over_w = 1.0 / point_in_screenspace._w();
+		float one_over_w = 1.0f / point_in_screenspace._w();
 		auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
 		point_in_devicespace.w = one_over_w;
 		return point_in_devicespace;
