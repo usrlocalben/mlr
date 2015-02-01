@@ -19,16 +19,6 @@
 #include "viewport.h"
 
 
-struct PVertex {
-	unsigned cf;
-	vec4 f; // fixed 2d x,y,"z",1overw
-	vec4 p; // eyespace
-	vec4 c; // clipspace
-//	vec4 n; // vertex_normal
-};
-
-
-
 struct Tilebin {
 	irect rect;
 	int id;
@@ -77,7 +67,7 @@ public:
 	void build_shadows(const Viewport& vp, const int light_id);
 
 	void reset(const int width, const int height) {
-		vlst.clear();
+		vlst_p.clear(); vlst_f.clear(); vlst_cf.clear();
 		tlst.clear();
 		nlst.clear();
 		llst.clear();
@@ -94,13 +84,12 @@ public:
 	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
-	PVertex clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t);
 
 	std::atomic<int> my_signal;
 private:
 	void begin_batch() {
 		_ASSERT(batch_in_progress == 0);
-		vbase = vlst.size();    new_vcnt = 0;
+		vbase = vlst_p.size();    new_vcnt = 0;
 		tbase = tlst.size();    new_tcnt = 0;
 		nbase = nlst.size();    new_ncnt = 0;
 		batch_in_progress = 1;
@@ -109,14 +98,18 @@ private:
 	//		clipbase = vbase + new_vcnt;
 	//	}
 	void end_batch() {
-		vbase = vlst.size();
+		vbase = vlst_p.size();
 		tbase = tlst.size();
 		nbase = nlst.size();
 		batch_in_progress = 0;
 	}
 	void process_face(PFace& f);
 
-	vectorsse<PVertex> vlst;  unsigned vbase;    int new_vcnt;    int clipbase;
+	vectorsse<vec4> vlst_p;
+	vectorsse<vec4> vlst_f;
+	vectorsse<unsigned char> vlst_cf;
+	unsigned vbase;    int new_vcnt;    int clipbase;
+
 	vectorsse<vec4> nlst;     unsigned nbase;    int new_ncnt;
 	vectorsse<vec4> tlst;     unsigned tbase;    int new_tcnt;
 	vectorsse<Light> llst;    unsigned lbase;

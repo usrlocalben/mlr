@@ -35,6 +35,15 @@ __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
 		0);
 }
 
+__forceinline vec4 to_device_space(const Viewport& vp, const vec4& point_in_clipspace)
+{
+	auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
+	float one_over_w = 1.0 / point_in_screenspace._w();
+	auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
+	point_in_devicespace.w = one_over_w;
+	return point_in_devicespace;
+
+}
 
 void Binner::reset(const int width, const int height)
 {
@@ -162,14 +171,17 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 	const int vidx2 = fsrc.ivp[1] + vbase;
 	const int vidx3 = fsrc.ivp[2] + vbase;
 
-	const auto& pv1 = vlst[vidx1];
-	const auto& pv2 = vlst[vidx2];
-	const auto& pv3 = vlst[vidx3];
+	const auto& pv1_p = vlst_p[vidx1];
+	const auto& pv2_p = vlst_p[vidx2];
+	const auto& pv3_p = vlst_p[vidx3];
+	const auto& pv1_cf = vlst_cf[vidx1];
+	const auto& pv2_cf = vlst_cf[vidx2];
+	const auto& pv3_cf = vlst_cf[vidx3];
 
 	// early out if all points are outside of any plane
-	if (pv1.cf & pv2.cf & pv3.cf) return;
+	if (pv1_cf & pv2_cf & pv3_cf) return;
 
-	const unsigned required_clipping = pv1.cf | pv2.cf | pv3.cf;
+	const unsigned required_clipping = pv1_cf | pv2_cf | pv3_cf;
 	if (required_clipping == 0) {
 		// all inside
 		process_face(fsrc.make_rebased(vbase, tbase, nbase));
@@ -200,18 +212,20 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 		do {
 			const auto next_pi = (this_pi + 1) % a_cnt; // wrap
 
-			const auto& this_v = vlst[a_vidx[this_pi]];
+			const auto& this_v_p = vlst_p[a_vidx[this_pi]];
+			const auto  this_v_c = vp.to_clip_space(this_v_p);
 			const auto& this_t = tlst[a_tidx[this_pi]];
 			const auto& this_n = nlst[a_nidx[this_pi]];
 
-			const auto& next_v = vlst[a_vidx[next_pi]];
+			const auto& next_v_p = vlst_p[a_vidx[next_pi]];
+			const auto  next_v_c = vp.to_clip_space(next_v_p);
 			const auto& next_t = tlst[a_tidx[next_pi]];
 			const auto& next_n = nlst[a_nidx[next_pi]];
 
 			if (this_pi == 0) {
-				we_are_inside = Guardband::is_inside(planebit, this_v.c);
+				we_are_inside = Guardband::is_inside(planebit, this_v_c);
 			}
-			const bool next_is_inside = Guardband::is_inside(planebit, next_v.c);
+			const bool next_is_inside = Guardband::is_inside(planebit, next_v_c);
 
 			if (we_are_inside) {
 				b_vidx[b_cnt] = a_vidx[this_pi];
@@ -223,8 +237,16 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 			if (we_are_inside != next_is_inside) {
 				we_are_inside = !we_are_inside;
 
-				const float t = Guardband::clipLine(planebit, this_v.c, next_v.c);
-				vlst.push_back(clipcalc(vp, this_v, next_v, t));  b_vidx[b_cnt] = vlst.size() - 1;
+				const float t = Guardband::clipLine(planebit, this_v_c, next_v_c);
+
+				auto new_p = lerp(this_v_p, next_v_p, t);
+				auto new_c = vp.to_clip_space(new_p);
+				auto new_f = to_device_space(vp, new_c);
+				vlst_p.push_back(new_p);
+				vlst_f.push_back(new_f);
+				vlst_cf.push_back(0);
+				b_vidx[b_cnt] = vlst_p.size() - 1;
+
 				tlst.push_back(lerp(this_t, next_t, t));  b_tidx[b_cnt] = tlst.size() - 1;
 				nlst.push_back(lerp(this_n, next_n, t));  b_nidx[b_cnt] = nlst.size() - 1;
 				b_cnt++;
@@ -278,47 +300,27 @@ void Pipedata::addLight(const mat4& camera_inverse, const Light& light)
 	llst.push_back(l2);
 }
 
-__forceinline PVertex point_to_PVertex(const Viewport& vp, const vec4& p)
-{
-	auto point_in_clipspace = vp.to_clip_space(p);
-	auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
 
-	float one_over_w = 1 / point_in_screenspace._w();
-	auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
-	point_in_devicespace.w = one_over_w;
-
-	auto clipflags = Guardband::clipPoint(point_in_clipspace);
-
-	return{ clipflags, point_in_devicespace, p, point_in_clipspace };
-}
 
 __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, const mat4& m)
 {
-	vlst.push_back(point_to_PVertex(vp, mat4_mul(m, src)));
+	auto point_in_eyespace = mat4_mul(m, src);
+	auto point_in_clipspace = vp.to_clip_space(point_in_eyespace);
+	auto point_in_devicespace = to_device_space(vp, point_in_clipspace);
+	auto clipflags = Guardband::clipPoint(point_in_clipspace);
+
+	vlst_p.push_back(point_in_eyespace);
+	vlst_f.push_back(point_in_devicespace);
+	vlst_cf.push_back(clipflags);
 	new_vcnt++;
-}
-
-
-PVertex Pipedata::clipcalc(const Viewport& vp, const PVertex& a, const PVertex& b, const float t)
-{
-	PVertex n;
-	n.p = lerp(a.p, b.p, t);
-	n.c = lerp(a.c, b.c, t);
-	vec4 s = vp.to_screen_space(n.c);
-//	n.n = lerp(a.n, b.n, t); vertex_normal
-
-	float one_over_w = 1 / s.w;
-	n.f = s / s.wwww();
-	n.f.w = one_over_w;
-	return n;
 }
 
 
 void Pipedata::process_face(PFace& f)
 {
-	vec4 p1 = vlst[f.ivp[0]].f;
-	vec4 p2 = vlst[f.ivp[1]].f;
-	vec4 p3 = vlst[f.ivp[2]].f;
+	vec4 p1 = vlst_f[f.ivp[0]];
+	vec4 p2 = vlst_f[f.ivp[1]];
+	vec4 p3 = vlst_f[f.ivp[2]];
 
 	const vec4 d31 = p3 - p1;
 	const vec4 d21 = p2 - p1;
@@ -361,7 +363,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& v
 			ShadowMesh sm;
 			sm.mesh = mi.mesh;
 			sm.c2o = mat4_inverse(to_camera);
-			sm.vbase = vlst.size();
+			sm.vbase = vlst_p.size();
 			shadowqueue.push_back(sm);
 		}
 
@@ -506,9 +508,9 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 		if (face.backfacing) continue;
 
-		const PVertex& v0 = vlst[face.ivp[0]];
-		const PVertex& v1 = vlst[face.ivp[1]];
-		const PVertex& v2 = vlst[face.ivp[2]];
+		const auto& v0_f = vlst_f[face.ivp[0]];
+		const auto& v1_f = vlst_f[face.ivp[1]];
+		const auto& v2_f = vlst_f[face.ivp[2]];
 
 		Material& mat = materialstore.store[face.mf];
 
@@ -522,18 +524,18 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-			tex_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
-			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
+			tex_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+			draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
 		}
 		else {
 			if (1) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
-				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
+				my_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
-				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
+				wire_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
 			}
 		}
 
@@ -545,20 +547,28 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3)
 {
-	PVertex pv[16];
-	PVertex pb[16];
-	pv[0] = point_to_PVertex(vp, p1);
-	pv[1] = point_to_PVertex(vp, p2);
-	pv[2] = point_to_PVertex(vp, p3);
+	unsigned char cf[3];
 
+	vec4 pv[16];
+	vec4 pb[16];
+	pv[0] = p1; pv[1] = p2; pv[2] = p3;
+	for (int i=0; i<3; i++) {
+		auto point_in_clipspace = vp.to_clip_space(pv[i]);
+		cf[i] = Guardband::clipPoint(point_in_clipspace);
+	}
 	int pvcnt = 3;
 
-	if (pv[0].cf & pv[1].cf & pv[2].cf) return;
 
-	const unsigned required_clipping = pv[0].cf | pv[1].cf | pv[2].cf;
+	if (cf[0] & cf[1] & cf[2]) return;
+
+	const unsigned required_clipping = cf[0] | cf[1] | cf[2];
 	if (required_clipping == 0) {
 		// all inside
-		binner.insert_shadow(pv[0].f, pv[1].f, pv[2].f);
+		binner.insert_shadow(
+			to_device_space(vp, vp.to_clip_space(pv[0])),
+			to_device_space(vp, vp.to_clip_space(pv[1])),
+			to_device_space(vp, vp.to_clip_space(pv[2]))
+			);
 		return;
 	}
 
@@ -568,32 +578,36 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 
 		bool we_are_inside;
 		unsigned this_pi = 0;
+		auto this_v = pv[this_pi];
+		auto this_c = vp.to_clip_space(this_v);
 		unsigned pbcnt = 0;
 
 		do {
 			const auto next_pi = (this_pi + 1) % pvcnt;
 
-			const auto& this_v = pv[this_pi];
-			const auto& next_v = pv[next_pi];
+			const auto next_v = pv[next_pi];
+			const auto next_c = vp.to_clip_space(next_v);
 
 			if (this_pi == 0) {
-				we_are_inside = Guardband::is_inside(planebit, this_v.c);
+				we_are_inside = Guardband::is_inside(planebit, this_c);
 			}
-			bool next_is_inside = Guardband::is_inside(planebit, next_v.c);
+			bool next_is_inside = Guardband::is_inside(planebit, next_c);
 
 			if (we_are_inside) {
-				pb[pbcnt] = pv[this_pi];
+				pb[pbcnt] = this_v;
 				pbcnt++;
 			}
 
 			if (we_are_inside != next_is_inside) {
 				we_are_inside = !we_are_inside;
-				auto t = Guardband::clipLine(planebit, this_v.c, next_v.c);
-				pb[pbcnt] = clipcalc(vp, this_v, next_v, t);
+				auto t = Guardband::clipLine(planebit, this_c, next_c);
+				pb[pbcnt] = lerp(this_v, next_v, t);
 				pbcnt++;
 			}
 
 			this_pi = next_pi;
+			this_v = next_v;
+			this_c = next_c;
 		} while (this_pi != 0);
 
 		for (unsigned i=0; i<pbcnt; i++) {
@@ -606,7 +620,11 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	if (pvcnt == 0) return;
 
 	for (unsigned a=1; a<pvcnt-1; a++) {
-		binner.insert_shadow(pv[0].f, pv[a].f, pv[a+1].f);
+		binner.insert_shadow(
+			to_device_space(vp, vp.to_clip_space(pv[0])),
+			to_device_space(vp, vp.to_clip_space(pv[a])),
+			to_device_space(vp, vp.to_clip_space(pv[a+1]))
+			);
 	}
 }
 
@@ -614,7 +632,7 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id)
 {
 	auto& light = this->llst[light_id];
 	for (auto& svmesh : shadowqueue) {
-		const PVertex * const vb = &vlst[svmesh.vbase];
+		const vec4 * const vb = &vlst_p[svmesh.vbase];
 
 		auto inv_light_position = mat4_mul(svmesh.c2o, light.position);
 		auto inv_light_position_x = inv_light_position.xxxx();
@@ -629,27 +647,27 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id)
 
 			auto dots = (face.nx*light_dir_x + face.ny*light_dir_y + face.nz*light_dir_z);
 			if ( dots._x() > 0 ) {    // facing away from light
-				auto p1 = extrude_to_infinity(vb[face.ivp[0]].p, light.position);
-				auto p2 = extrude_to_infinity(vb[face.ivp[1]].p, light.position);
-				auto p3 = extrude_to_infinity(vb[face.ivp[2]].p, light.position);
+				auto p1 = extrude_to_infinity(vb[face.ivp[0]], light.position);
+				auto p2 = extrude_to_infinity(vb[face.ivp[1]], light.position);
+				auto p3 = extrude_to_infinity(vb[face.ivp[2]], light.position);
 				add_shadow_triangle(vp, p1, p2, p3);
 			} else {               // facing towards lightA
 				vec4 edge_a[3];
 				vec4 edge_b[3];
 				int paircnt = 0;
 				if (dots._y() > 0) {
-					edge_a[paircnt] = vb[face.ivp[1]].p;
-					edge_b[paircnt] = vb[face.ivp[0]].p;
+					edge_a[paircnt] = vb[face.ivp[1]];
+					edge_b[paircnt] = vb[face.ivp[0]];
 					paircnt++;
 				}
 				if (dots._z() > 0) {
-					edge_a[paircnt] = vb[face.ivp[2]].p;
-					edge_b[paircnt] = vb[face.ivp[1]].p;
+					edge_a[paircnt] = vb[face.ivp[2]];
+					edge_b[paircnt] = vb[face.ivp[1]];
 					paircnt++;
 				}
 				if (dots._w() > 0) {
-					edge_a[paircnt] = vb[face.ivp[0]].p;
-					edge_b[paircnt] = vb[face.ivp[2]].p;
+					edge_a[paircnt] = vb[face.ivp[0]];
+					edge_b[paircnt] = vb[face.ivp[2]];
 					paircnt++;
 				}
 				for (int i=0; i<paircnt; i++) {
@@ -661,9 +679,9 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id)
 					add_shadow_triangle(vp, na, fb, fa);
 				}
 				//front cap
-				auto& c1 = vb[face.ivp[0]].p;
-				auto& c2 = vb[face.ivp[1]].p;
-				auto& c3 = vb[face.ivp[2]].p;
+				auto& c1 = vb[face.ivp[0]];
+				auto& c2 = vb[face.ivp[1]];
+				auto& c3 = vb[face.ivp[2]];
 				add_shadow_triangle(vp, c1, c2, c3);
 			}
 		}
