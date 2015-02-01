@@ -142,9 +142,9 @@ void Viewport::test()
 	cout << "intersection at (" << format("%11.4f") % t << ") along path from a->b" << endl;
 	cout << "intersection: " << test_inter << endl;
 	
-	vec4 test_a_clipspace = this->to_clip_space(test_a);
-	vec4 test_b_clipspace = this->to_clip_space(test_b);
-	vec4 test_i_clipspace = this->to_clip_space(test_inter);
+	vec4 test_a_clipspace = this->eye_to_clip(test_a);
+	vec4 test_b_clipspace = this->eye_to_clip(test_b);
+	vec4 test_i_clipspace = this->eye_to_clip(test_inter);
 
 	cout << "clipspace a: " << test_a_clipspace << endl;
 	cout << "clipspace b: " << test_b_clipspace << endl;
@@ -160,9 +160,9 @@ void Viewport::test()
 	cout << "distance to intersection using clipspace method: " << format("%11.4f") % tclip << endl;
 	cout << endl;
 
-	vec4 test_a_screenspace = this->to_screen_space(test_a_clipspace);
-	vec4 test_b_screenspace = this->to_screen_space(test_b_clipspace);
-	vec4 test_i_screenspace = this->to_screen_space(test_i_clipspace);
+	vec4 test_a_screenspace = this->clip_to_screen(test_a_clipspace);
+	vec4 test_b_screenspace = this->clip_to_screen(test_b_clipspace);
+	vec4 test_i_screenspace = this->clip_to_screen(test_i_clipspace);
 	//test_a_screenspace /= test_a_clipspace.w;
 	//test_b_screenspace /= test_b_clipspace.w;
 	test_i_screenspace /= test_i_screenspace.w;

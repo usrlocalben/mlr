@@ -11,16 +11,24 @@ struct Viewport
 	Viewport(const unsigned sx, const unsigned sy, const float aspect, const float fov);
 	void test();
 
-	__forceinline vec4 to_clip_space(const vec4& src) const { return mat4_mul(this->mp, src); }
-	__forceinline vec4 to_screen_space(const vec4& src) const { return mat4_mul(this->md, src); }
+	__forceinline vec4 eye_to_clip(const vec4& src) const {
+		return mat4_mul(this->mp, src);
+	}
 
-	__forceinline vec4 to_device_space(const vec4& point_in_clipspace)
-	{
-		auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
+	__forceinline vec4 clip_to_screen(const vec4& src) const {
+		return mat4_mul(this->md, src);
+	}
+
+	__forceinline vec4 clip_to_device(const vec4& point_in_clipspace) const {
+		auto point_in_screenspace = clip_to_screen(point_in_clipspace);
 		float one_over_w = 1.0 / point_in_screenspace._w();
 		auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
 		point_in_devicespace.w = one_over_w;
 		return point_in_devicespace;
+	}
+
+	__forceinline vec4 eye_to_device(const vec4& src) const {
+		return clip_to_device(eye_to_clip(src));
 	}
 
 	Plane frust[6];
