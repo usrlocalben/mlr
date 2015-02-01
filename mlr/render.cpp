@@ -35,16 +35,6 @@ __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
 		0);
 }
 
-__forceinline vec4 to_device_space(const Viewport& vp, const vec4& point_in_clipspace)
-{
-	auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
-	float one_over_w = 1.0 / point_in_screenspace._w();
-	auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
-	point_in_devicespace.w = one_over_w;
-	return point_in_devicespace;
-
-}
-
 void Binner::reset(const int width, const int height)
 {
 	if (device_width != width  || device_height != height) {
@@ -241,7 +231,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 
 				auto new_p = lerp(this_v_p, next_v_p, t);
 				auto new_c = vp.to_clip_space(new_p);
-				auto new_f = to_device_space(vp, new_c);
+				auto new_f = vp.to_device_space(new_c);
 				vlst_p.push_back(new_p);
 				vlst_f.push_back(new_f);
 				vlst_cf.push_back(0);
@@ -306,7 +296,7 @@ __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, cons
 {
 	auto point_in_eyespace = mat4_mul(m, src);
 	auto point_in_clipspace = vp.to_clip_space(point_in_eyespace);
-	auto point_in_devicespace = to_device_space(vp, point_in_clipspace);
+	auto point_in_devicespace = vp.to_device_space(point_in_clipspace);
 	auto clipflags = Guardband::clipPoint(point_in_clipspace);
 
 	vlst_p.push_back(point_in_eyespace);
@@ -565,9 +555,9 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	if (required_clipping == 0) {
 		// all inside
 		binner.insert_shadow(
-			to_device_space(vp, vp.to_clip_space(pv[0])),
-			to_device_space(vp, vp.to_clip_space(pv[1])),
-			to_device_space(vp, vp.to_clip_space(pv[2]))
+			vp.to_device_space(vp.to_clip_space(pv[0])),
+			vp.to_device_space(vp.to_clip_space(pv[1])),
+			vp.to_device_space(vp.to_clip_space(pv[2]))
 			);
 		return;
 	}
@@ -621,9 +611,9 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 
 	for (unsigned a=1; a<pvcnt-1; a++) {
 		binner.insert_shadow(
-			to_device_space(vp, vp.to_clip_space(pv[0])),
-			to_device_space(vp, vp.to_clip_space(pv[a])),
-			to_device_space(vp, vp.to_clip_space(pv[a+1]))
+			vp.to_device_space(vp.to_clip_space(pv[0])),
+			vp.to_device_space(vp.to_clip_space(pv[a])),
+			vp.to_device_space(vp.to_clip_space(pv[a+1]))
 			);
 	}
 }

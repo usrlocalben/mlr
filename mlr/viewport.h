@@ -14,6 +14,15 @@ struct Viewport
 	__forceinline vec4 to_clip_space(const vec4& src) const { return mat4_mul(this->mp, src); }
 	__forceinline vec4 to_screen_space(const vec4& src) const { return mat4_mul(this->md, src); }
 
+	__forceinline vec4 to_device_space(const vec4& point_in_clipspace)
+	{
+		auto point_in_screenspace = vp.to_screen_space(point_in_clipspace);
+		float one_over_w = 1.0 / point_in_screenspace._w();
+		auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
+		point_in_devicespace.w = one_over_w;
+		return point_in_devicespace;
+	}
+
 	Plane frust[6];
 
 	unsigned width;
