@@ -211,7 +211,7 @@ public:
 
 	void index_bins() {
 		bin_index.clear();
-		for (int bi = 0; bi < pipes[0].binner.bins.size(); bi++) {
+		for (size_t bi = 0; bi < pipes[0].binner.bins.size(); bi++) {
 			int ax = 0; 
 			for (int ti = 0; ti < threads; ti++) {
 				ax += pipes[ti].binner.bins[bi].faces.size();
@@ -261,7 +261,7 @@ private:
 	TrueColorPixel * __restrict target;
 	int target_width;
 
-	std::atomic<int> current_bin;
+	std::atomic<unsigned> current_bin;
 	std::vector<std::thread> workers;
 	void workerthread(const int thread_number);
 

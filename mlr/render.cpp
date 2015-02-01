@@ -451,7 +451,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& v
 void Pipeline::render_thread(const int thread_number)
 {
 	while (1) {
-		int binnumber = current_bin++;
+		auto binnumber = current_bin++;
 
 		int idx;
 		if (0) {
@@ -679,7 +679,7 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	}
 	if (pvcnt == 0) return;
 
-	for (unsigned a=1; a<pvcnt-1; a++) {
+	for (int a=1; a<pvcnt-1; a++) {
 		binner.insert_shadow(
 			vp.eye_to_device(pv[0]),
 			vp.eye_to_device(pv[a]),
@@ -838,7 +838,7 @@ void Pipedata::process_gltri(const Viewport& vp, const int material_id)
 	}
 	if (pvcnt == 0) return;
 
-	for (unsigned a=1; a<pvcnt-1; a++) {
+	for (int a=1; a<pvcnt-1; a++) {
 		binner.insert_gltri(vp, tri_eye, tri_nor, tri_col, tri_tex, 0, a, a+1, material_id);
 	}
 }
@@ -863,8 +863,8 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 #define I_TEXTURE 4
 
 	auto& bin = binner.bins[bin_idx];
-	int di = 0;
-	int fi = 0;
+	unsigned di = 0;
+	unsigned fi = 0;
 	while (di < bin.gldata.size()) {
 
 		auto facedata = bin.glface[fi];
