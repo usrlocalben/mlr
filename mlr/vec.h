@@ -374,6 +374,16 @@ __declspec(align(16)) struct vec4 {
 		_mm_store_ss(&r, _mm_sqrt_ss(r3));
 		return r;
 	}
+	/*
+	non sse3 version...
+	__forceinline friend float length(const vec4& a) {
+		__m128 r0 = _mm_mul_ps(a.v, a.v);
+		__m128 r1 = _mm_add_ps(_mm_movehl_ps(r0, r0), r0);
+		float x;
+		_mm_store_ss(&x, _mm_add_ss(r1, _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(1, 1, 1, 1))));
+		return sqrt(x);
+	}
+	*/
 
 	__forceinline friend vec4 normalized(const vec4 &a)	{
 		__m128 l = _mm_mul_ps(a.v, a.v);
