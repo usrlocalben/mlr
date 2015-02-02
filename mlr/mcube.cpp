@@ -37,12 +37,27 @@ static const vec4 edge_direction[12] = {
 
 void IsoCubes::run(Pipedata& pipe, const mat4& xform)
 {
-	for (int ix=0; ix<grid_size; ix++ )
-	for (int iy=0; iy<grid_size; iy++ )
-	for (int iz=0; iz<grid_size; iz++ ) {
-		auto pos = vec4(ix, iy, iz, 1);
-		pos *= vec4(step_size, step_size, step_size, 1);
-		run_cube(pipe, xform, pos, step_size);
+	auto scale = vec4(step_size, step_size, step_size, 1);
+	auto halfscale = scale * vec4(0.5, 0.5, 0.5, 0);
+
+	auto radius = sqrtf((step_size/2)*(step_size/2) * 3);
+	for (int ix = 0; ix < grid_size; ix++)
+	for (int iy = 0; iy < grid_size; iy++) {
+		float ax = 0;
+		for (int iz = 0; iz < grid_size; iz++) {
+			if (ax > radius) {
+				ax -= step_size;
+			} else {
+				auto pos = vec4(ix, iy, iz, 1) * scale;
+				auto center = pos + halfscale;
+				auto dist = abs(sampler(center));
+				if (dist > radius) {
+					ax = dist - radius;
+				} else {
+					run_cube(pipe, xform, pos, step_size);
+				}
+			}
+		}
 	}
 }
 
