@@ -539,8 +539,8 @@ void Pipeline::render()
 	START_WORKERS(1); process_thread(0); JOIN_WORKERS;
 	telemetry.inc();
 
-	START_WORKERS(3); shadow_thread(0); JOIN_WORKERS;
-	telemetry.inc();
+//	START_WORKERS(3); shadow_thread(0); JOIN_WORKERS;
+//	telemetry.inc();
 
 	index_bins();
 	telemetry.mark(0);
@@ -843,6 +843,13 @@ void Pipedata::process_gltri(const Viewport& vp, const int material_id)
 	}
 }
 
+struct VertexData {
+	vec4 f;
+	vec4 p;
+	vec4 n;
+	vec4 c;
+	vec4 t;
+};
 
 void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
 {
@@ -856,12 +863,6 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 	wire_shader.setDepthBuffer(db);
 	wire_shader.setColor(vec4(1, 0.66, 0.33, 0));
 
-#define I_FINAL 0
-#define I_POINT 1
-#define I_NORMAL 2
-#define I_COLOR 3
-#define I_TEXTURE 4
-
 	auto& bin = binner.bins[bin_idx];
 	unsigned di = 0;
 	unsigned fi = 0;
@@ -873,13 +874,10 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 
 		if (backfacing) continue;
 
-		const auto& v0_f = bin.gldata[di+0+I_FINAL];
-		const auto& v1_f = bin.gldata[di+5+I_FINAL];
-		const auto& v2_f = bin.gldata[di+10+I_FINAL];
-
-		const auto& v0_t = bin.gldata[di+0+I_TEXTURE];
-		const auto& v1_t = bin.gldata[di+5+I_TEXTURE];
-		const auto& v2_t = bin.gldata[di+10+I_TEXTURE];
+		const auto& v0 = *reinterpret_cast<VertexData*>(&bin.gldata[di+0]);
+		const auto& v1 = *reinterpret_cast<VertexData*>(&bin.gldata[di+5]);
+		const auto& v2 = *reinterpret_cast<VertexData*>(&bin.gldata[di+10]);
+		di += 15; fi++;
 
 		Material& mat = materialstore.store[material_id];
 
@@ -892,24 +890,22 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
-			tex_shader.setUV(v0_t, v1_t, v2_t);
-			tex_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
-			draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
+			tex_shader.setUV(v0.t, v1.t, v2.t);
+			tex_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
-			if (1) {
+			if (0) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				my_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
-				draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
+				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
-				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
+				wire_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
 			}
 		}
 
-		di += 15;
-		fi += 1;
 	}//gldata
 }
 
