@@ -63,11 +63,15 @@ void IsoCubes::run(Pipedata& pipe, const mat4& xform)
 
 float IsoCubes::calc_offset(const float a, const float b, const float target) const
 {
-	double delta = b - a;
-	if (delta == 0.0) {
-		return 0.5f;
+	if ( 1 ) {
+		return (target - a)/(b-a);
 	} else {
-		return (target - a)/delta;
+		double delta = b - a;
+		if (delta == 0.0) {
+			return 0.5f;
+		} else {
+			return (target - a)/delta;
+		}
 	}
 }
 
