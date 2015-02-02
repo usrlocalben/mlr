@@ -19,12 +19,23 @@ struct Viewport
 		return mat4_mul(this->md, src);
 	}
 
+	/*
 	__forceinline vec4 clip_to_device(const vec4& point_in_clipspace) const {
 		auto point_in_screenspace = clip_to_screen(point_in_clipspace);
 		float one_over_w = 1.0f / point_in_screenspace._w();
 		auto point_in_devicespace = point_in_screenspace / point_in_screenspace.wwww();
 		point_in_devicespace.w = one_over_w;
 		return point_in_devicespace;
+	}
+	*/
+	__forceinline vec4 clip_to_device(const vec4& point_in_clipspace) const {
+		__m128 src = clip_to_screen(point_in_clipspace).v;
+		__m128 r1 = _mm_div_ps(_mm_set1_ps(1.0f), src);
+		__m128 invw = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(3, 3, 3, 3));
+		__m128 r2 = _mm_mul_ps(src, invw);
+		__m128 r3 = _mm_movehl_ps(r2, r1);
+		__m128 r4 = _mm_shuffle_ps(r2, r3, _MM_SHUFFLE(1, 2, 1, 0));
+		return r4;
 	}
 
 	__forceinline vec4 eye_to_device(const vec4& src) const {
