@@ -16,10 +16,6 @@
 using namespace std;
 
 
-const int grid_size = 16;
-const float step_size = 1.0f / grid_size;
-
-
 static const vec4 vertex_offset[8] = {
 	{0,0,0,0},{1,0,0,0},{1,1,0,0},{0,1,0,0},
 	{0,0,1,0},{1,0,1,0},{1,1,1,0},{0,1,1,0}
