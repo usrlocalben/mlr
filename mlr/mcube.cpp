@@ -44,6 +44,7 @@ void IsoCubes::run(Pipedata& pipe, const mat4& xform)
 	for (int ix = 0; ix < grid_size; ix++)
 	for (int iy = 0; iy < grid_size; iy++) {
 		float ax = 0;
+		last_iz = 0;
 		for (int iz = 0; iz < grid_size; iz++) {
 			if (ax > radius) {
 				ax -= step_size;
@@ -54,7 +55,7 @@ void IsoCubes::run(Pipedata& pipe, const mat4& xform)
 				if (dist > radius) {
 					ax = dist - radius;
 				} else {
-					run_cube(pipe, xform, pos, step_size);
+					run_cube(pipe, xform, pos, step_size, iz);
 				}
 			}
 		}
@@ -103,7 +104,7 @@ vec4 calc_color(const vec4& p, const vec4& n)
 	return vec4(1,1,1,1);
 }
 
-void IsoCubes::run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale)
+void IsoCubes::run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale, const int this_iz)
 {
 	extern int cube_edge_flags[256];
 	extern int tritable[256][16];
@@ -111,11 +112,25 @@ void IsoCubes::run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, floa
 	float cube_value[8];
 	vec4 edge_vertex[12];
 	vec4 edge_normal[12];
-	int flag_index = 0;
 
-	for (int iv=0; iv<8; iv++) {
+	if (this_iz == last_iz+1) {
+		for (int iv=0; iv<4; iv++) {
+			cube_value[iv] = stored_value[iv];
+		}
+	} else {
+		for (int iv=0; iv<4; iv++) {
+			auto sample_pos = pos + vertex_offset[iv] * vec4(scale,scale,scale,1);
+			cube_value[iv] = sampler(sample_pos);
+		}
+	}
+	last_iz = this_iz;
+	for (int iv=4; iv<8; iv++) {
 		auto sample_pos = pos + vertex_offset[iv] * vec4(scale,scale,scale,1);
-		cube_value[iv] = sampler(sample_pos);
+		stored_value[iv-4] = cube_value[iv] = sampler(sample_pos);
+	}
+
+	int flag_index = 0;
+	for (int iv=0; iv<8; iv++) {
 		if (cube_value[iv] <= target_value)
 			flag_index |= 1<<iv;
 	}

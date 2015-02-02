@@ -24,7 +24,7 @@ public:
 	void run(Pipedata& pipe, const mat4& xform);
 
 private:
-	void run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale);
+	void run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale, const int this_iz);
 	vec4 calc_normal(const vec4& p) const;
 	float calc_offset(const float a, const float b, const float target) const;
 
@@ -32,6 +32,10 @@ private:
 	float step_size;
 	float target_value;
 	float (*sampler)(const vec4& p);
+
+	// these are not threadsafe!!
+	int last_iz;
+	float stored_value[4];
 };
 
 #endif //__MCUBE_H
