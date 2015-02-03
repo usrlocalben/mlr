@@ -159,7 +159,7 @@ private:
 class ShadedShader : public FlatShader {
 public:
 	void setColor(const vec4& c1, const vec4& c2, const vec4& c3) {
-		color.set(c1, c2, c3);
+		color.fill(c1, c2, c3);
 	}
 
 	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
@@ -282,7 +282,7 @@ public:
 	inline TextureShader(const TEXTURE_UNIT& tu) :texunit(tu){}
 
 	void setUV(const vec4& c1, const vec4& c2, const vec4& c3) {
-		vert_uv.set(c1, c2, c3);
+		vert_uv.fill(c1, c2, c3);
 	}
 
 	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {

@@ -76,7 +76,7 @@ struct vertex_float {
 struct vertex_float2 {
 	vec4 x[3];
 	vec4 y[3];
-	__forceinline void set(const vec4& v0, const vec4& v1, const vec4& v2) {
+	__forceinline void fill(const vec4& v0, const vec4& v1, const vec4& v2) {
 		x[0] = v0.xxxx();  y[0] = v0.yyyy();
 		x[1] = v1.xxxx();  y[1] = v1.yyyy();
 		x[2] = v2.xxxx();  y[2] = v2.yyyy();
@@ -86,7 +86,7 @@ struct vertex_float3 {
 	vec4 x[3];
 	vec4 y[3];
 	vec4 z[3];
-	void set(const vec4& v0, const vec4& v1, const vec4& v2) {
+	void fill(const vec4& v0, const vec4& v1, const vec4& v2) {
 		x[0] = v0.xxxx();  y[0] = v0.yyyy();  z[0] = v0.zzzz();
 		x[1] = v1.xxxx();  y[1] = v1.yyyy();  z[1] = v1.zzzz();
 		x[2] = v2.xxxx();  y[2] = v2.yyyy();  z[2] = v2.zzzz();
