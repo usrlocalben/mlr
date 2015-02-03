@@ -215,6 +215,7 @@ public:
 			int ax = 0; 
 			for (int ti = 0; ti < threads; ti++) {
 				ax += pipes[ti].binner.bins[bi].faces.size();
+				ax += pipes[ti].binner.bins[bi].glface.size();
 			}
 			bin_index.push_back(binstat(bi, ax));
 		}
