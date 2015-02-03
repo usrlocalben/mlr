@@ -120,10 +120,11 @@ public:
 		depthwrite(old_depth, frag_depth, frag_mask);
 	}
 
-	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) {
+	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
 		qfloat3 color3;
 		color3 = qmul(face_color, frag_depth);
 		frag_color.set(color3);
+//		frag_color.set(face_color);
 	}
 };
 
@@ -139,14 +140,14 @@ public:
 
 class WireShader : public FlatShader {
 public:
-	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) {
+	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
 		static const qfloat grey(0.5f);
 		const qfloat e = edgefactor(BS);
 		frag_color.v[0] = frag_color.v[1] = frag_color.v[2] = mix(grey, vec4::zero(), e) * frag_depth * vec4(4.0f);
 
 	}
 private:
-	__forceinline qfloat edgefactor(const vertex_float& BS) {
+	__forceinline qfloat edgefactor(const vertex_float& BS) const {
 		static const qfloat thickfactor(1.5f);
 		qfloat3 d = fwidth(BS);
 		qfloat3 a3 = smoothstep_zero(qmul(d, thickfactor), BS);
@@ -157,16 +158,16 @@ private:
 
 class ShadedShader : public FlatShader {
 public:
-	vertex_float3 color;
-
 	void setColor(const vec4& c1, const vec4& c2, const vec4& c3) {
 		color.set(c1, c2, c3);
 	}
 
-	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) {
+	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
 		qfloat3 color3 = vertex_blend(BS, color);
 		frag_color.set(color3);
 	}
+private:
+	vertex_float3 color;
 };
 
 
@@ -284,7 +285,7 @@ public:
 		vert_uv.set(c1, c2, c3);
 	}
 
-	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) {
+	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
 		qfloat2 frag_uv = vertex_blend(BP, vert_uv);
 
 		qfloat4 texpx;
