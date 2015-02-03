@@ -20,32 +20,31 @@ public:
 	void set_grid(const int a) {
 		grid_size = a;
 		step_size = 1.0f / a;
+		cube_radius = sqrtf((step_size / 2)*(step_size / 2) * 3);
 	}
 	void set_target(const float a) {
 		target_value = a;
 	}
 
-	void run(Pipedata& pipe, const mat4& xform)
+	void run(Pipedata& pipe, const mat4& xform, const int thread_number, const int thread_count)
 	{
 		auto scale = vec4(step_size, step_size, step_size, 1);
 		auto halfscale = scale * vec4(0.5, 0.5, 0.5, 0);
 
-		auto radius = sqrtf((step_size/2)*(step_size/2) * 3);
-		last_iz = -1;
-		for (int ix = 0; ix < grid_size; ix++)
+		for (int ix = thread_number; ix < grid_size; ix+=thread_count)
 		for (int iy = 0; iy < grid_size; iy++) {
 			float ax = 0;
 			for (int iz = 0; iz < grid_size; iz++) {
-				if (ax > radius) {
+				if (ax > cube_radius) {
 					ax -= step_size;
 				} else {
 					auto pos = vec4(ix, iy, iz, 1) * scale;
 					auto center = pos + halfscale;
-					auto dist = abs(surface.sample(center));
-					if (dist > radius) {
-						ax = dist - radius;
+					auto distance = abs(surface.sample(center));
+					if (distance > cube_radius) {
+						ax = distance - cube_radius;
 					} else {
-						run_cube(pipe, xform, pos, step_size, iz);
+						run_cube(pipe, xform, pos, step_size);
 					}
 				}
 			}
@@ -68,13 +67,12 @@ public:
 
 	vec4 calc_normal(const vec4& p) const
 	{
-		float x = sampler(p-vec4(0.01,0,0,0)) - sampler(p+vec4(0.01,0,0,0));
-		float y = sampler(p-vec4(0,0.01,0,0)) - sampler(p+vec4(0,0.01,0,0));
-		float z = sampler(p-vec4(0,0,0.01,0)) - sampler(p+vec4(0,0,0.01,0));
+		float x = surface.sample(p-vec4(0.01,0,0,0)) - surface.sample(p+vec4(0.01,0,0,0));
+		float y = surface.sample(p-vec4(0,0.01,0,0)) - surface.sample(p+vec4(0,0.01,0,0));
+		float z = surface.sample(p-vec4(0,0,0.01,0)) - surface.sample(p+vec4(0,0,0.01,0));
 		return normalized(vec4(x,y,z,0));
 	}
 
-	/*
 	vec4 calc_color(const vec4& p, const vec4& n)
 	{
 		auto x = n._x();
@@ -87,37 +85,24 @@ public:
 			1.0f
 		);
 	}
-	*/
 
+	/*
 	vec4 calc_color(const vec4& p, const vec4& n)
 	{
 		return vec4(1,1,1,1);
 	}
+	*/
 
-	void run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale, const int this_iz)
+	void run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale)
 	{
 		float cube_value[8];
 		vec4 edge_vertex[12];
 		vec4 edge_normal[12];
 
-		if (this_iz == last_iz+1) {
-			for (int iv=0; iv<4; iv++) {
-				cube_value[iv] = stored_value[iv];
-			}
-		} else {
-			for (int iv=0; iv<4; iv++) {
-				auto sample_pos = pos + vertex_offset[iv] * vec4(scale,scale,scale,1);
-				cube_value[iv] = surface.sample(sample_pos);
-			}
-		}
-		last_iz = this_iz;
-		for (int iv=4; iv<8; iv++) {
-			auto sample_pos = pos + vertex_offset[iv] * vec4(scale,scale,scale,1);
-			stored_value[iv-4] = cube_value[iv] = surface.sample(sample_pos);
-		}
-
 		int flag_index = 0;
 		for (int iv=0; iv<8; iv++) {
+			auto sample_pos = pos + vertex_offset[iv] * vec4(scale,scale,scale,1);
+			cube_value[iv] = surface.sample(sample_pos);
 			if (cube_value[iv] <= target_value)
 				flag_index |= 1<<iv;
 		}
@@ -133,7 +118,7 @@ public:
 					cube_value[ edge_connection[edge][1] ],
 					target_value);
 				edge_vertex[edge] = pos + (vertex_offset[edge_connection[edge][0]] + vec4(offset,offset,offset,1) * edge_direction[edge]) * vec4(scale,scale,scale,1);
-	//			edge_normal[edge] = calc_normal(edge_vertex[edge]);
+				edge_normal[edge] = calc_normal(edge_vertex[edge]);
 			}
 		}
 
@@ -141,11 +126,10 @@ public:
 			if (tritable[flag_index][3*tri] < 0) break; // end of the list
 			for (int corner=0; corner<3; corner++) {
 				auto vertex = tritable[flag_index][3*tri+corner];
-	//			auto color = calc_color(edge_vertex[vertex], edge_normal[vertex]);
-	//			pipe.glColor(color);
-	//			pipe.glNormal(edge_normal[vertex]);
+				auto color = calc_color(edge_vertex[vertex], edge_normal[vertex]);
+				pipe.glColor(color);
+				pipe.glNormal(edge_normal[vertex]);
 				pipe.glVertex(mat4_mul(xform,edge_vertex[vertex]));
-	//			cout <<"added a vertex" << endl;
 			}
 		}
 	}
@@ -153,12 +137,9 @@ public:
 private:
 	int grid_size;
 	float step_size;
+	float cube_radius;
 	float target_value;
 	const SURFACE_SAMPLER& surface;
-
-	// these are not threadsafe!!
-	int last_iz;
-	float stored_value[4];
 };
 
 
