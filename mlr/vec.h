@@ -374,6 +374,10 @@ __declspec(align(16)) struct vec4 {
 		_mm_store_ss(&r, _mm_sqrt_ss(r3));
 		return r;
 	}
+
+	__forceinline friend vec4 sqrt(const vec4& a) {
+		return _mm_sqrt_ps(a.v);
+	}
 	/*
 	non sse3 version...
 	__forceinline friend float length(const vec4& a) {
