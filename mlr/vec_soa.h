@@ -12,7 +12,19 @@
 typedef vec4 qfloat;
 struct qfloat2 {
 	vec4 v[2];
+	__forceinline qfloat2 operator+(const qfloat2& b) const { return{ { v[0] + b.v[0], v[1] + b.v[1] } }; }
+	__forceinline qfloat2 operator-(const qfloat2& b) const { return{ { v[0] - b.v[0], v[1] - b.v[1] } }; }
+	__forceinline qfloat2 operator*(const qfloat2& b) const { return{ { v[0] * b.v[0], v[1] * b.v[1] } }; }
+	__forceinline qfloat2 operator/(const qfloat2& b) const { return{ { v[0] / b.v[0], v[1] / b.v[1] } }; }
+
+	__forceinline qfloat2 operator+(const qfloat& b) const { return{ { v[0] + b, v[1] + b } }; }
+	__forceinline qfloat2 operator-(const qfloat& b) const { return{ { v[0] - b, v[1] - b } }; }
+	__forceinline qfloat2 operator*(const qfloat& b) const { return{ { v[0] * b, v[1] * b } }; }
+	__forceinline qfloat2 operator/(const qfloat& b) const { return{ { v[0] / b, v[1] / b } }; }
 };
+__forceinline qfloat length(const qfloat2 &a) {
+	return sqrt(a.v[0] * a.v[0] + a.v[1] * a.v[1]);
+}
 struct qfloat3 {
 	vec4 v[3];
 	__forceinline void set(const vec4& a) {
