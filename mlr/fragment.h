@@ -116,8 +116,7 @@ public:
 	}
 
 	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
-		qfloat3 color3;
-		color3 = qmul(face_color, frag_depth);
+		qfloat3 color3 = face_color * frag_depth;
 		frag_color.set(color3);
 //		frag_color.set(face_color);
 	}
@@ -145,7 +144,7 @@ private:
 	__forceinline qfloat edgefactor(const vertex_float& BS) const {
 		static const qfloat thickfactor(1.5f);
 		qfloat3 d = fwidth(BS);
-		qfloat3 a3 = smoothstep_zero(qmul(d, thickfactor), BS);
+		qfloat3 a3 = smoothstep_zero(d*thickfactor, BS);
 		return vmin(a3.v[0], vmin(a3.v[1], a3.v[2]));
 	}
 };

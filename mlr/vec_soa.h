@@ -32,6 +32,15 @@ struct qfloat3 {
 		v[1] = a.yyyy();
 		v[2] = a.zzzz();
 	}
+	__forceinline qfloat3 operator+(const qfloat3& b) const { return{ {v[0]+b.v[0], v[1]+b.v[1], v[2]+b.v[2] } }; }
+	__forceinline qfloat3 operator-(const qfloat3& b) const { return{ {v[0]-b.v[0], v[1]-b.v[1], v[2]-b.v[2] } }; }
+	__forceinline qfloat3 operator*(const qfloat3& b) const { return{ {v[0]*b.v[0], v[1]*b.v[1], v[2]*b.v[2] } }; }
+	__forceinline qfloat3 operator/(const qfloat3& b) const { return{ {v[0]/b.v[0], v[1]/b.v[1], v[2]/b.v[2] } }; }
+
+	__forceinline qfloat3 operator+(const qfloat& b) const { return{ {v[0]+b, v[1]+b, v[2]+b } }; }
+	__forceinline qfloat3 operator-(const qfloat& b) const { return{ {v[0]-b, v[1]-b, v[2]-b } }; }
+	__forceinline qfloat3 operator*(const qfloat& b) const { return{ {v[0]*b, v[1]*b, v[2]*b } }; }
+	__forceinline qfloat3 operator/(const qfloat& b) const { return{ {v[0]/b, v[1]/b, v[2]/b } }; }
 };
 struct qfloat4 {
 	vec4 v[4];
@@ -41,13 +50,6 @@ struct qfloat4 {
 		v[2] = a.v[2];
 	}
 };
-__forceinline qfloat3 qmul(const qfloat3& a, const qfloat& b) {
-	qfloat3 r;
-	r.v[0] = a.v[0] * b;
-	r.v[1] = a.v[1] * b;
-	r.v[2] = a.v[2] * b;
-	return r;
-}
 __forceinline vec4 dFdx(const vec4& a) {
 	return a.yyww() - a.xxzz();
 }
