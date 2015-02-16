@@ -29,6 +29,8 @@ public:
 			center_coord.v[1] = vec4(v);
 		} else if (i==3) {
 			deg2rad = vec4(PI*2/v);
+		} else if (i == 4) {
+			alpha = vec4(v);
 		}
 	}
 
@@ -46,11 +48,15 @@ public:
 		offs++; // += offs_inc;
 	}
 
+	__forceinline qfloat colorproc(const qfloat& o, const qfloat& n, const qfloat& alpha) {
+		return lerp_fast(o,n,alpha);
+		//return n;
+	}
 	__forceinline void colorout(const qfloat4& n) {
 		auto cbx = cb+offs;
-		n.v[0].store(&cbx->r);
-		n.v[1].store(&cbx->g);
-		n.v[2].store(&cbx->b);
+		colorproc(vec4::load(&cbx->r), n.v[0], alpha).store(&cbx->r);
+		colorproc(vec4::load(&cbx->g), n.v[1], alpha).store(&cbx->g);
+		colorproc(vec4::load(&cbx->b), n.v[2], alpha).store(&cbx->b);
 	}
 
 	virtual __forceinline void render(const qfloat2& frag_coord) {
@@ -71,6 +77,7 @@ private:
 	qfloat t;
 	qfloat2 center_coord;
 	qfloat deg2rad;
+	qfloat alpha;
 };
 
 #endif //__DISTORT_H
