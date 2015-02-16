@@ -29,8 +29,9 @@ struct Viewport
 	}
 	*/
 	__forceinline vec4 clip_to_device(const vec4& point_in_clipspace) const {
+		static const __m128 one = _mm_set1_ps(1.0f);
 		__m128 src = clip_to_screen(point_in_clipspace).v;
-		__m128 r1 = _mm_div_ps(_mm_set1_ps(1.0f), src);
+		__m128 r1 = _mm_div_ps(one, src);
 		__m128 invw = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(3, 3, 3, 3));
 		__m128 r2 = _mm_mul_ps(src, invw);
 		__m128 r3 = _mm_movehl_ps(r2, r1);
