@@ -277,7 +277,7 @@ struct ts_pow2_mipmap_nearest {
 	const FloatingPointPixel * __restrict texdata;
 	const float fstride;
 
-	ts_pow2_nearest(const FloatingPointPixel * const __restrict ptr) :texdata(ptr), fstride(float(1<<power)) {}
+	ts_pow2_mipmap_nearest(const FloatingPointPixel * const __restrict ptr) :texdata(ptr), fstride(float(1<<power)) {}
 
 	__forceinline void fetch_texel(const int rowoffset, const int mipsize, const ivec4& x, const ivec4& y, vec4 * const __restrict px) const
 	{
