@@ -320,7 +320,7 @@ __declspec(align(16)) struct vec4 {
 		return vec4(_mm_load_ps(reinterpret_cast<float*>(a)));
 	}
 
-	__forceinline void store(__m128 *out) {
+	__forceinline void store(__m128 *out) const {
 		_mm_store_ps(reinterpret_cast<float*>(out), this->v);
 	}
 	//static __forceinline vec4 load(vec4 *a) {
