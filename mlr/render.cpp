@@ -458,7 +458,7 @@ void Pipeline::render_thread(const int thread_number)
 		if (0) {
 			// linear order
 			if (binnumber >= pipes[0].binner.bins.size()) break;
-		        idx = binnumber;
+			idx = binnumber;
 		} else {
 			// use the sort index
 			if (binnumber >= bin_index.size()) break;
@@ -845,6 +845,7 @@ void Pipedata::process_gltri(const Viewport& vp, const int material_id)
 	}
 }
 
+#pragma pack(1)
 struct VertexData {
 	vec4 f;
 	vec4 p;
@@ -852,6 +853,7 @@ struct VertexData {
 	vec4 c;
 	vec4 t;
 };
+#pragma pack()
 
 void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
 {
