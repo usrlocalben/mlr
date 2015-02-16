@@ -16,12 +16,12 @@ static const float PI_F = 3.14159265358979f;
 
 
 template<typename T>
-T lerp_fast(const T a, const T b, const T f) {
+T lerp_fast(const T& a, const T& b, const T& f) {
 	return a + (f*(b - a));
 }
 
 template<typename T>
-T lerp(const T a, const T b, const T f) {
+T lerp(const T& a, const T& b, const T& f) {
 	return (1 - f)*a + f*b;
 }
 
