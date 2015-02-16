@@ -9,6 +9,8 @@
 
 #include <emmintrin.h>
 
+#include "ryg_srgb.h"
+
 static const double PI = 3.14159265358979323846F;
 static const float PI_F = 3.14159265358979f;
 
@@ -1345,6 +1347,12 @@ void test()
 }
 */
 
+__forceinline vec4 from_rgb(const int r, const int g, const int b, const float alpha) {
+	return vec4(srgb8_to_float(r), srgb8_to_float(g), srgb8_to_float(b), alpha);
+}
+__forceinline vec4 from_rgb(const int r, const int g, const int b) {
+	return from_rgb(r, g, b, 1.0f);
+}
 
 std::ostream& operator<<(std::ostream& os, const vec4& v);
 std::ostream& operator<<(std::ostream& os, const vec3& v);
