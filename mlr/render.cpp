@@ -857,10 +857,10 @@ struct VertexData {
 
 void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
 {
-	FlatShader my_shader;
+	ShadedShader my_shader;
 	my_shader.setColorBuffer(cb);
 	my_shader.setDepthBuffer(db);
-	my_shader.setColor(vec4(1, 0.66, 0.33, 0));
+//	my_shader.setColor(vec4(1, 0.66, 0.33, 0));
 
 	WireShader wire_shader;
 	wire_shader.setColorBuffer(cb);
@@ -896,8 +896,9 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
-			if (0) {
-				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+			if (1) {
+//				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				my_shader.setColor(v0.c, v1.c, v2.c);
 				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			} else {
