@@ -271,6 +271,51 @@ struct ts_pow2_mipmap {
 };
 
 
+template<int power>
+struct ts_pow2_mipmap_nearest {
+
+	const FloatingPointPixel * __restrict texdata;
+	const float fstride;
+
+	ts_pow2_nearest(const FloatingPointPixel * const __restrict ptr) :texdata(ptr), fstride(float(1<<power)) {}
+
+	__forceinline void fetch_texel(const int rowoffset, const int mipsize, const ivec4& x, const ivec4& y, vec4 * const __restrict px) const
+	{
+		const auto texmod = ivec4(mipsize - 1);
+
+		auto tx = ivec4(x & texmod);
+		auto ty = ivec4(texmod - (y & texmod));
+
+		auto offset = ivec4(shl<power>(ty) | tx) + ivec4(rowoffset);
+
+		px[0].v = _mm_load_ps((float*)&texdata[offset.x]);
+		px[1].v = _mm_load_ps((float*)&texdata[offset.y]);
+		px[2].v = _mm_load_ps((float*)&texdata[offset.z]);
+		px[3].v = _mm_load_ps((float*)&texdata[offset.w]);
+	}
+
+	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
+	{
+		int offset, mip_size, stride;
+		float dux = (uv.v[0].y - uv.v[0].x)*fstride;
+		float duy = (uv.v[0].z - uv.v[0].x)*fstride;
+		float dvx = (uv.v[1].y - uv.v[1].x)*fstride;
+		float dvy = (uv.v[1].z - uv.v[1].x)*fstride;
+		mipcalc<power>(dux, dvx, duy, dvy, &offset, &mip_size, &stride);
+
+		const vec4 texsize(itof(ivec4(mip_size)));
+
+		// scale normalized coords to texture coords
+		vec4 up(uv.v[0] * texsize);
+		vec4 vp(uv.v[1] * texsize);
+
+		// temporary load p1 AoS data by lane, then transpose to make SoA rrrr/gggg/bbbb/aaaa
+		fetch_texel(offset, mip_size, ftoi(up), ftoi(vp), px.v); transpose4(px.v);
+	}
+
+};
+
+
 template <typename TEXTURE_UNIT>
 class TextureShader : public FlatShader {
 public:
