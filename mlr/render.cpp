@@ -467,7 +467,10 @@ void Pipeline::render_thread(const int thread_number)
 		const irect& tilerect = pipes[0].binner.bins[idx].rect;
 
 		db->clear(tilerect);
-		cb->clear(tilerect);
+		//cb->clear(tilerect);
+		if (this->clear_color_enable) {
+			cb->clear(tilerect, this->clear_color_rgb);
+		}
 		for (int ti = 0; ti < threads; ti++) {
 			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
 			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);

@@ -120,11 +120,11 @@ private:
 	}
 	void process_face(PFace& f);
 
+	// indexed buffers api
 	vectorsse<vec4> vlst_p;
 	vectorsse<vec4> vlst_f;
 	vectorsse<unsigned char> vlst_cf;
 	unsigned vbase;    int new_vcnt;    int clipbase;
-
 	vectorsse<vec4> nlst;     unsigned nbase;    int new_ncnt;
 	vectorsse<vec4> tlst;     unsigned tbase;    int new_tcnt;
 	vectorsse<Light> llst;    unsigned lbase;
@@ -133,6 +133,8 @@ private:
 	int thread_count;
 	int root_count;
 
+
+	// shadow volumes (indexed buffers only)
 	vectorsse<ShadowMesh> shadowqueue;
 
 
@@ -267,6 +269,15 @@ private:
 	void workerthread(const int thread_number);
 
 	class Telemetry& telemetry;
+
+
+public:
+	bool clear_color_enable;
+	vec4 clear_color_rgb;
+	void clear(const bool enable, const vec4& c) {
+		clear_color_enable = enable;
+		clear_color_rgb = c;
+	}
 };
 
 #endif //__RENDER_H

@@ -44,6 +44,26 @@ struct SOACanvas {
 			dst += stride;
 		}
 	}
+	void clear(const irect area, const vec4& c) {
+		auto cr = c.xxxx();
+		auto cg = c.yyyy();
+		auto cb = c.zzzz();
+
+		int x0 = area.x0 >> 1;
+		int y0 = area.y0 >> 1;
+		int x1 = area.x1 >> 1;
+		int y1 = area.y1 >> 1;
+		SOAPixel * __restrict dst = &b[y0*stride+x0];
+		for (int i = 0; i < y1 - y0; i++) {
+			for (int xi = 0; xi < x1 - x0; xi++) {
+				dst[xi].r = cr.v;
+				dst[xi].g = cg.v;
+				dst[xi].b = cb.v;
+			}
+			dst += stride;
+		}
+
+	}
 
 	void putpixel(int x, int y, const FloatingPointPixel& px)
 	{
