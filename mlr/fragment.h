@@ -90,7 +90,7 @@ public:
 		selectbits(old_depth, new_depth, mask).store(dbx);
 	}
 
-	virtual __forceinline void render(const int x, const int y, const ivec4& trimask, const vertex_float& BS) {
+	virtual __forceinline void render(const qfloat2& frag_coord, const ivec4& trimask, const vertex_float& BS) {
 
 		qfloat frag_depth = vertex_blend(BS, vert_depth);
 
@@ -108,11 +108,6 @@ public:
 		BP.x[0] = vert_invw.x[0] * BS.x[0] * frag_w;
 		BP.x[1] = vert_invw.x[1] * BS.x[1] * frag_w;
 		BP.x[2] = vec4(1.0f) - (BP.x[0] + BP.x[1]);
-
-		qfloat2 frag_coord = {
-			vec4(x + 0.5f) + vec4(0, 1, 0, 1),
-			vec4(height - y - 0.5f) + vec4(0, 0, -1, -1)
-		};
 
 		qfloat4 frag_color;
 		fragment(frag_color, frag_mask, frag_coord, frag_depth, BS, BP);

@@ -13,6 +13,10 @@
 
 using namespace PixelToaster;
 
+const ivec4 iqx(0,1,0,1);
+const ivec4 iqy(0,0,1,1);
+const vec4 fqx(0,1,0,1);
+const vec4 fqy(0,0,1,1);
 
 __forceinline int iround(const float x)
 {
@@ -41,7 +45,7 @@ struct Edge {
 
 		c = (c - 1) >> 4;
 
-		block_left_start = ivec4(c) + (ivec4(0, 1, 0, 1)*dy) + (ivec4(0, 0, 1, 1)*dx);
+		block_left_start = ivec4(c) + iqx*dy + iqy*dx;
 		b = block_left_start;
 		bdx = ivec4(dy * 2);
 		bdy = ivec4(dx * 2);
@@ -111,12 +115,14 @@ void draw_triangle(const irect& r, const vec4& s1, const vec4& s2, const vec4& s
 			if (movemask(bits2float(edges)) == 0xf) continue;
 			const ivec4 trimask(sar<31>(edges));
 
+			qfloat2 frag_coord = { vec4(x+0.5f)+fqx, vec4(y+0.5f)+fqy };
+
 			vertex_float bary;
 			bary.x[0] = itof(e[1].val()) * scale;
 			bary.x[2] = itof(e[0].val()) * scale;
 			bary.x[1] = vec4(1.0f) - (bary.x[0] + bary.x[2]);
 
-			fp.render(x, y, trimask, bary);
+			fp.render(frag_coord, trimask, bary);
 		}
 	}
 }
