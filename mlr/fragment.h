@@ -200,11 +200,13 @@ __forceinline void mipcalc(const float dux, const float dvx, const float duy, co
 }
 
 
-struct ts_512_mipmap {
+template<int power>
+struct ts_pow2_mipmap {
 
 	const FloatingPointPixel * __restrict texdata;
+	const float fstride;
 
-	ts_512_mipmap(const FloatingPointPixel * const __restrict ptr) :texdata(ptr) {}
+	ts_pow2_mipmap(const FloatingPointPixel * const __restrict ptr) :texdata(ptr), fstride(float(1<<power)) {}
 
 	__forceinline void fetch_texel(const int rowoffset, const int mipsize, const ivec4& x, const ivec4& y, vec4 * const __restrict px) const
 	{
@@ -213,7 +215,7 @@ struct ts_512_mipmap {
 		auto tx = ivec4(x & texmod);
 		auto ty = ivec4(texmod - (y & texmod));
 
-		auto offset = ivec4(shl<9>(ty) | tx) + ivec4(rowoffset);
+		auto offset = ivec4(shl<power>(ty) | tx) + ivec4(rowoffset);
 
 		px[0].v = _mm_load_ps((float*)&texdata[offset.x]);
 		px[1].v = _mm_load_ps((float*)&texdata[offset.y]);
@@ -224,11 +226,11 @@ struct ts_512_mipmap {
 	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
 	{
 		int offset, mip_size, stride;
-		float dux = (uv.v[0].y - uv.v[0].x)*512.0f;
-		float duy = (uv.v[0].z - uv.v[0].x)*512.0f;
-		float dvx = (uv.v[1].y - uv.v[1].x)*512.0f;
-		float dvy = (uv.v[1].z - uv.v[1].x)*512.0f;
-		mipcalc<9>(dux, dvx, duy, dvy, &offset, &mip_size, &stride);
+		float dux = (uv.v[0].y - uv.v[0].x)*fstride;
+		float duy = (uv.v[0].z - uv.v[0].x)*fstride;
+		float dvx = (uv.v[1].y - uv.v[1].x)*fstride;
+		float dvy = (uv.v[1].z - uv.v[1].x)*fstride;
+		mipcalc<power>(dux, dvx, duy, dvy, &offset, &mip_size, &stride);
 
 		const vec4 texsize(itof(ivec4(mip_size)));
 

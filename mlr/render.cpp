@@ -578,11 +578,8 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 		if (mat.imagename != string("")) {
 			const auto tex = texturestore.find(mat.imagename);
-			//			const auto texunit = ts_512i(&tex->b[0]);
-			//			auto tex_shader = TextureShader<ts_512i>(texunit);
-
-			const auto texunit = ts_512_mipmap(&tex->b[0]);
-			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
+			const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
+			auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
@@ -883,11 +880,8 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 
 		if (mat.imagename != string("")) {
 			const auto tex = texturestore.find(mat.imagename);
-			//			const auto texunit = ts_512i(&tex->b[0]);
-			//			auto tex_shader = TextureShader<ts_512i>(texunit);
-
-			const auto texunit = ts_512_mipmap(&tex->b[0]);
-			auto tex_shader = TextureShader<ts_512_mipmap>(texunit);
+			const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
+			auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(v0.t, v1.t, v2.t);
