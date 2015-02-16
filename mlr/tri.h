@@ -127,4 +127,25 @@ void draw_triangle(const irect& r, const vec4& s1, const vec4& s2, const vec4& s
 	}
 }
 
+
+template <typename FRAGMENT_PROCESSOR>
+void draw_rectangle(const irect& r, FRAGMENT_PROCESSOR& fp)
+{
+	int minx = r.x0;
+	int maxx = r.x1;
+	int miny = r.y0;
+	int maxy = r.y1;
+
+	const int q = 2; // block size is 2x2
+//	minx &= ~(q - 1); // align to 2x2 block
+//	miny &= ~(q - 1);
+
+	fp.goto_xy(minx, miny);
+	for (int y = miny; y < maxy; y += 2, fp.inc_y())
+	for (int x = minx; x < maxx; x += 2, fp.inc_x()) {
+		qfloat2 frag_coord = { vec4(x+0.5f)+fqx, vec4(y+0.5f)+fqy };
+		fp.render(frag_coord);
+	}
+}
+
 #endif //__TRI_H
