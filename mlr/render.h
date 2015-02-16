@@ -89,6 +89,8 @@ public:
 		root_count = 0;
 		binner.reset(width, height);
 		shadowqueue.clear();
+		rectdata.clear();
+		rectbyte.clear();
 	}
 	void addFace(const Viewport& vp, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
@@ -97,6 +99,7 @@ public:
 	Binner binner;
 	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
+	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 
@@ -138,7 +141,27 @@ private:
 	vectorsse<ShadowMesh> shadowqueue;
 
 
+	// rect-shader api
+private:
+	vectorsse<int> rectbyte;
+	vectorsse<float> rectdata;
+	int rect_param_count;
+public:
+	void rect_begin(const int ty) {
+		rectbyte.push_back(ty);
+		rect_param_count = 0;
+	}
+	void rect_data(const float val) {
+		rectdata.push_back(val);
+		rect_param_count++;
+	}
+	void rect_end() {
+		rectbyte.push_back(rect_param_count);
+	}
+
+
 	// glVertex() api
+private:
 	vec4 cur_nor;
 	vec4 cur_col;
 	vec4 cur_tex;
@@ -176,6 +199,7 @@ public:
 	}
 private:
 	void process_gltri(const Viewport& vp, const int material_id);
+
 };
 
 

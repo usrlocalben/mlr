@@ -15,6 +15,7 @@
 #include "texture.h"
 #include "viewport.h"
 #include "fragment.h"
+#include "distort.h"
 
 using namespace std;
 
@@ -474,6 +475,7 @@ void Pipeline::render_thread(const int thread_number)
 		for (int ti = 0; ti < threads; ti++) {
 			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
 			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
+			pipes[ti].render_rect(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
@@ -904,5 +906,33 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 		}
 
 	}//gldata
+}
+
+
+void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
+{
+	auto& bin = binner.bins[bin_idx];
+	const irect& tilerect = bin.rect;
+	unsigned di = 0;
+	unsigned fi = 0;
+	while (di < this->rectbyte.size()) {
+
+		int rtype = this->rectbyte[di++];
+		int rvals = this->rectbyte[di++];
+
+		if (rtype == 1) {
+			const auto tex = texturestore.find("girl256.png");
+			const auto texunit = ts_pow2_mipmap_nearest<8>(&tex->b[0]);
+			DistortShader<ts_pow2_mipmap_nearest<8>> ds(texunit);
+			ds.setColorBuffer(cb);
+			ds.setup(vp.width, vp.height);
+			for (int pi=0; pi<rvals; pi++) {
+				const float val = this->rectdata[fi++];
+				ds.setParam(pi, val);
+			}
+			draw_rectangle(tilerect, ds);
+		}
+
+	}//rectbytes
 }
 
