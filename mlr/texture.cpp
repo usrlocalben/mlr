@@ -166,7 +166,7 @@ void Texture::maybe_make_mipmap()
 
 	}
 	this->mipmap = true;
-	this->height *= 2;
+//	this->height *= 2;  // this is probably only useful for viewing the mipmap itself
 }
 
 
