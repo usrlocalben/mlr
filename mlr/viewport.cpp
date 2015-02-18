@@ -81,7 +81,7 @@ Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, con
 	const auto x1 = sx;
 
 	auto md_yfix = mat4_init(
-	       1,        0,       0,       0,
+		   1,        0,       0,       0,
 		   0,       -1,       0,       0,
 		   0,        0,       1,       0,
 		   0,        0,       0,       1);
