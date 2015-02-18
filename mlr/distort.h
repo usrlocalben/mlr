@@ -31,6 +31,12 @@ public:
 			deg2rad = vec4(PI*2/v);
 		} else if (i == 4) {
 			alpha = vec4(v);
+		} else if (i == 5) {
+			scale = vec4(v);
+		} else if (i == 6) {
+			pos.v[0] = vec4(v);
+		} else if (i == 7) {
+			pos.v[1] = vec4(v);
 		}
 	}
 
@@ -61,7 +67,7 @@ public:
 
 	virtual __forceinline void render(const qfloat2& frag_coord) {
 		qfloat2 screensize = { vec4(width), -vec4(width) };
-		qfloat2 adj_coord = frag_coord / screensize;
+		qfloat2 adj_coord = frag_coord / (screensize * scale) + pos;
 		qfloat2 centervector = adj_coord - center_coord;
 		qfloat distance = length(centervector)*256.0;
 		qfloat2 dir = centervector / distance;
@@ -78,6 +84,8 @@ private:
 	qfloat2 center_coord;
 	qfloat deg2rad;
 	qfloat alpha;
+	qfloat scale;
+	qfloat2 pos;
 };
 
 #endif //__DISTORT_H
