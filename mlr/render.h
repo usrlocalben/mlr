@@ -65,11 +65,6 @@ private:
 	vec4 device_max;
 };
 
-struct ShadowMesh {
-	const Mesh* mesh;
-	int vbase;
-	mat4 c2o; // cameraspace-to-objectspace
-};
 
 
 class Pipedata {
@@ -78,7 +73,7 @@ public:
 
 	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp);
 	void add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3);
-	void build_shadows(const Viewport& vp, const int light_id);
+	void build_shadows(const Viewport& vp, const int light_id, const struct ShadowMesh& svmesh);
 
 	void reset(const int width, const int height) {
 		vlst_p.clear(); vlst_f.clear(); vlst_cf.clear();
@@ -88,7 +83,6 @@ public:
 		batch_in_progress = 0;
 		root_count = 0;
 		binner.reset(width, height);
-		shadowqueue.clear();
 		rectdata.clear();
 		rectbyte.clear();
 	}
@@ -135,10 +129,6 @@ private:
 	int thread_number;
 	int thread_count;
 	int root_count;
-
-
-	// shadow volumes (indexed buffers only)
-	vectorsse<ShadowMesh> shadowqueue;
 
 
 	// rect-shader api
@@ -233,7 +223,6 @@ public:
 	void render();
 	void render_thread(const int thread_number);
 	void process_thread(const int thread_number);
-	void shadow_thread(const int thread_number);
 
 	void index_bins() {
 		bin_index.clear();

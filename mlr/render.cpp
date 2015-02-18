@@ -36,6 +36,12 @@ __forceinline vec4 extrude_to_infinity(const vec4& p, const vec4& l)
 		0);
 }
 
+struct ShadowMesh {
+	const Mesh* mesh;
+	int vbase;
+	mat4 c2o; // cameraspace-to-objectspace
+};
+
 void Binner::reset(const int width, const int height)
 {
 	if (device_width != width  || device_height != height) {
@@ -426,7 +432,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& v
 			sm.mesh = mi.mesh;
 			sm.c2o = mat4_inverse(to_camera);
 			sm.vbase = vlst_p.size();
-			shadowqueue.push_back(sm);
+//			build_shadows(vp, 0, sm);
 		}
 
 		begin_batch();
@@ -500,15 +506,6 @@ void Pipeline::process_thread(const int thread_number){
 	telemetry.mark(thread_number);
 }
 
-void Pipeline::shadow_thread(const int thread_number)
-{
-	auto& pipe = this->pipes[thread_number];
-
-	pipe.build_shadows(*vp, 0);
-	telemetry.mark(thread_number);
-}
-
-
 void Pipeline::workerthread(const int thread_number)
 {
 	bind_to_cpu(thread_number);
@@ -529,8 +526,6 @@ void Pipeline::workerthread(const int thread_number)
 			process_thread(thread_number);
 		} else if (job_to_do == 2) {
 			render_thread(thread_number);
-		} else if (job_to_do == 3) {
-			shadow_thread(thread_number);
 		}
 		signal_start = 0;
 	}
@@ -543,9 +538,6 @@ void Pipeline::render()
 {
 	START_WORKERS(1); process_thread(0); JOIN_WORKERS;
 	telemetry.inc();
-
-//	START_WORKERS(3); shadow_thread(0); JOIN_WORKERS;
-//	telemetry.inc();
 
 	index_bins();
 	telemetry.mark(0);
@@ -690,62 +682,60 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	}
 }
 
-void Pipedata::build_shadows(const Viewport& vp, const int light_id)
+void Pipedata::build_shadows(const Viewport& vp, const int light_id, const ShadowMesh& svmesh)
 {
 	auto& light = this->llst[light_id];
-	for (auto& svmesh : shadowqueue) {
-		const vec4 * const vb = &vlst_p[svmesh.vbase];
+	const vec4 * const vb = &vlst_p[svmesh.vbase];
 
-		auto inv_light_position = mat4_mul(svmesh.c2o, light.position);
-		auto inv_light_position_x = inv_light_position.xxxx();
-		auto inv_light_position_y = inv_light_position.yyyy();
-		auto inv_light_position_z = inv_light_position.zzzz();
+	auto inv_light_position = mat4_mul(svmesh.c2o, light.position);
+	auto inv_light_position_x = inv_light_position.xxxx();
+	auto inv_light_position_y = inv_light_position.yyyy();
+	auto inv_light_position_z = inv_light_position.zzzz();
 
-		for (auto& face : svmesh.mesh->faces) {
+	for (auto& face : svmesh.mesh->faces) {
 
-			auto light_dir_x = face.px - inv_light_position_x;
-			auto light_dir_y = face.py - inv_light_position_y;
-			auto light_dir_z = face.pz - inv_light_position_z;
+		auto light_dir_x = face.px - inv_light_position_x;
+		auto light_dir_y = face.py - inv_light_position_y;
+		auto light_dir_z = face.pz - inv_light_position_z;
 
-			auto dots = (face.nx*light_dir_x + face.ny*light_dir_y + face.nz*light_dir_z);
-			if ( dots._x() > 0 ) {    // facing away from light
-				auto p1 = extrude_to_infinity(vb[face.ivp[0]], light.position);
-				auto p2 = extrude_to_infinity(vb[face.ivp[1]], light.position);
-				auto p3 = extrude_to_infinity(vb[face.ivp[2]], light.position);
-				add_shadow_triangle(vp, p1, p2, p3);
-			} else {               // facing towards lightA
-				vec4 edge_a[3];
-				vec4 edge_b[3];
-				int paircnt = 0;
-				if (dots._y() > 0) {
-					edge_a[paircnt] = vb[face.ivp[1]];
-					edge_b[paircnt] = vb[face.ivp[0]];
-					paircnt++;
-				}
-				if (dots._z() > 0) {
-					edge_a[paircnt] = vb[face.ivp[2]];
-					edge_b[paircnt] = vb[face.ivp[1]];
-					paircnt++;
-				}
-				if (dots._w() > 0) {
-					edge_a[paircnt] = vb[face.ivp[0]];
-					edge_b[paircnt] = vb[face.ivp[2]];
-					paircnt++;
-				}
-				for (int i=0; i<paircnt; i++) {
-					auto& na = edge_a[i];
-					auto& nb = edge_b[i];
-					auto fa = extrude_to_infinity(na, light.position);
-					auto fb = extrude_to_infinity(nb, light.position);
-					add_shadow_triangle(vp, na, nb, fb); // quad na->nb->fb->fa
-					add_shadow_triangle(vp, na, fb, fa);
-				}
-				//front cap
-				auto& c1 = vb[face.ivp[0]];
-				auto& c2 = vb[face.ivp[1]];
-				auto& c3 = vb[face.ivp[2]];
-				add_shadow_triangle(vp, c1, c2, c3);
+		auto dots = (face.nx*light_dir_x + face.ny*light_dir_y + face.nz*light_dir_z);
+		if ( dots._x() > 0 ) {    // facing away from light
+			auto p1 = extrude_to_infinity(vb[face.ivp[0]], light.position);
+			auto p2 = extrude_to_infinity(vb[face.ivp[1]], light.position);
+			auto p3 = extrude_to_infinity(vb[face.ivp[2]], light.position);
+			add_shadow_triangle(vp, p1, p2, p3);
+		} else {               // facing towards lightA
+			vec4 edge_a[3];
+			vec4 edge_b[3];
+			int paircnt = 0;
+			if (dots._y() > 0) {
+				edge_a[paircnt] = vb[face.ivp[1]];
+				edge_b[paircnt] = vb[face.ivp[0]];
+				paircnt++;
 			}
+			if (dots._z() > 0) {
+				edge_a[paircnt] = vb[face.ivp[2]];
+				edge_b[paircnt] = vb[face.ivp[1]];
+				paircnt++;
+			}
+			if (dots._w() > 0) {
+				edge_a[paircnt] = vb[face.ivp[0]];
+				edge_b[paircnt] = vb[face.ivp[2]];
+				paircnt++;
+			}
+			for (int i=0; i<paircnt; i++) {
+				auto& na = edge_a[i];
+				auto& nb = edge_b[i];
+				auto fa = extrude_to_infinity(na, light.position);
+				auto fb = extrude_to_infinity(nb, light.position);
+				add_shadow_triangle(vp, na, nb, fb); // quad na->nb->fb->fa
+				add_shadow_triangle(vp, na, fb, fa);
+			}
+			//front cap
+			auto& c1 = vb[face.ivp[0]];
+			auto& c2 = vb[face.ivp[1]];
+			auto& c3 = vb[face.ivp[2]];
+			add_shadow_triangle(vp, c1, c2, c3);
 		}
 	}
 }
