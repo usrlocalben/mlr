@@ -106,7 +106,7 @@ void Mesh::assignEdges()
 	}//foreach faces
 
 
-	for (int i=0; i<faces.size(); i++) {
+	for (unsigned i=0; i<faces.size(); i++) {
 		Face& face = faces[i];
 		for (int ei=0; ei<3; ei++) {
 			const unsigned edgekey = make_edge_key(face.ivp[ei], face.ivp[(ei+1)%3]);
