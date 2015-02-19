@@ -915,15 +915,28 @@ void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, Mat
 
 		if (rtype == 1) {
 			const auto tex = texturestore.find("girl256.png");
-			const auto texunit = ts_pow2_mipmap_nearest<8>(&tex->b[0]);
-			DistortShader<ts_pow2_mipmap_nearest<8>> ds(texunit);
-			ds.setColorBuffer(cb);
-			ds.setup(vp.width, vp.height);
+			const auto texunit = ts_any_direct_nearest(&tex->b[0], tex->width, tex->height);
+			DistortShader<ts_any_direct_nearest> the_shader(texunit);
+			//const auto texunit = ts_pow2_direct_nearest<8>(&tex->b[0]);
+			//DistortShader<ts_pow2_direct_nearest<8>> the_shader(texunit);
+			the_shader.setColorBuffer(cb);
+			the_shader.setup(vp.width, vp.height);
 			for (int pi=0; pi<rvals; pi++) {
 				const float val = this->rectdata[fi++];
-				ds.setParam(pi, val);
+				the_shader.setParam(pi, val);
 			}
-			draw_rectangle(tilerect, ds);
+			draw_rectangle(tilerect, the_shader);
+		} else if (rtype == 2) {
+			const auto tex = texturestore.find("water-girl.png");
+			const auto texunit = ts_any_direct_nearest(&tex->b[0], tex->width, tex->height);
+			OverlayShader<ts_any_direct_nearest> the_shader(texunit);
+			the_shader.setColorBuffer(cb);
+			the_shader.setup(vp.width, vp.height, tex->width, tex->height);
+			for (int pi=0; pi<rvals; pi++) {
+				const float val = this->rectdata[fi++];
+				the_shader.setParam(pi, val);
+			}
+			draw_rectangle(tilerect, the_shader);
 		}
 
 	}//rectbytes
