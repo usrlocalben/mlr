@@ -47,7 +47,6 @@ struct PFace {
 //	vec4 n;
 	int mf;
 //	int mb;
-	bool backfacing;
 };
 
 struct Face {

@@ -22,7 +22,9 @@
 struct Tilebin {
 	irect rect;
 	int id;
-	std::vector<PFace> faces;
+	vectorsse<vec4> vf;
+	vectorsse<char> backfacing;
+	vectorsse<PFace> faces;
 	vectorsse<vec4> sv;
 
 	// glVertex api
@@ -30,8 +32,11 @@ struct Tilebin {
 	std::vector<unsigned char> glface;
 
 	void clear() {
+		vf.clear();
+		backfacing.clear();
 		faces.clear();
 		sv.clear();
+
 		gldata.clear();
 	}
 };
@@ -39,7 +44,7 @@ struct Tilebin {
 class Binner {
 public:
 	void reset(const int cur_width, const int cur_height);
-	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face);
+	void insert(const vec4& p1, const vec4& p2, const vec4& p3, const bool backfacing, const PFace& face);
 	void insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3);
 	void insert_gltri(
 		const Viewport& vp,
@@ -76,7 +81,7 @@ public:
 	void build_shadows(const Viewport& vp, const int light_id, const struct ShadowMesh& svmesh);
 
 	void reset(const int width, const int height) {
-		vlst_p.clear(); vlst_f.clear(); vlst_cf.clear();
+		vlst_p.clear(); vlst_cf.clear();
 		tlst.clear();
 		nlst.clear();
 		llst.clear();
@@ -115,11 +120,11 @@ private:
 		nbase = nlst.size();
 		batch_in_progress = 0;
 	}
-	void process_face(PFace& f);
+	void process_face(PFace& f, const Viewport& vp);
 
 	// indexed buffers api
 	vectorsse<vec4> vlst_p;
-	vectorsse<vec4> vlst_f;
+//	vectorsse<vec4> vlst_f;
 	vectorsse<unsigned char> vlst_cf;
 	unsigned vbase;    int new_vcnt;    int clipbase;
 	vectorsse<vec4> nlst;     unsigned nbase;    int new_ncnt;

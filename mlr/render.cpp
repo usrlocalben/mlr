@@ -81,7 +81,7 @@ void Binner::onResize()
 }
 
 
-void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace& face)
+void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const bool backfacing, const PFace& face)
 {
 	auto pmin = vmax(vmin(p1, vmin(p2, p3)), vec4::zero());
 	auto pmax = vmin(vmax(p1, vmax(p2, p3)), device_max);
@@ -100,6 +100,10 @@ void Binner::insert(const vec4& p1, const vec4& p2, const vec4& p3, const PFace&
 		for (int tx = tx0; tx <= xlim; tx++) {
 			auto& bin = bins[bin_row_offset + tx];
 			bin.faces.push_back(face);
+			bin.vf.push_back(p1);
+			bin.vf.push_back(p2);
+			bin.vf.push_back(p3);
+			bin.backfacing.push_back(backfacing ? 1 : 0);
 		}
 	}
 }
@@ -252,7 +256,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 	const unsigned required_clipping = pv1_cf | pv2_cf | pv3_cf;
 	if (required_clipping == 0) {
 		// all inside
-		process_face(fsrc.make_rebased(vbase, tbase, nbase));
+		process_face(fsrc.make_rebased(vbase, tbase, nbase), vp);
 		return;
 	}
 
@@ -309,9 +313,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 
 				auto new_p = lerp(this_v_p, next_v_p, t);
 				auto new_c = vp.eye_to_clip(new_p);
-				auto new_f = vp.clip_to_device(new_c);
 				vlst_p.push_back(new_p);
-				vlst_f.push_back(new_f);
 				vlst_cf.push_back(0);
 				b_vidx[b_cnt] = vlst_p.size() - 1;
 
@@ -340,7 +342,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 			a_vidx[0], a_vidx[a], a_vidx[a + 1],
 			a_tidx[0], a_tidx[a], a_tidx[a + 1],
 			a_nidx[0], a_nidx[a], a_nidx[a + 1]);
-		process_face(f);
+		process_face(f, vp);
 	}
 
 }
@@ -374,35 +376,33 @@ __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, cons
 {
 	auto point_in_eyespace = mat4_mul(m, src);
 	auto point_in_clipspace = vp.eye_to_clip(point_in_eyespace);
-	auto point_in_devicespace = vp.clip_to_device(point_in_clipspace);
 	auto clipflags = Guardband::clipPoint(point_in_clipspace);
 
 	vlst_p.push_back(point_in_eyespace);
-	vlst_f.push_back(point_in_devicespace);
 	vlst_cf.push_back(clipflags);
 	new_vcnt++;
 }
 
 
-void Pipedata::process_face(PFace& f)
+void Pipedata::process_face(PFace& f, const Viewport& vp)
 {
-	vec4 p1 = vlst_f[f.ivp[0]];
-	vec4 p2 = vlst_f[f.ivp[1]];
-	vec4 p3 = vlst_f[f.ivp[2]];
+	vec4 p1 = vp.eye_to_device(vlst_p[f.ivp[0]]);
+	vec4 p2 = vp.eye_to_device(vlst_p[f.ivp[1]]);
+	vec4 p3 = vp.eye_to_device(vlst_p[f.ivp[2]]);
 
 	const vec4 d31 = p3 - p1;
 	const vec4 d21 = p2 - p1;
 	const float area = d31.x*d21.y - d31.y*d21.x;
 
-	f.backfacing = area < 0;
+	bool backfacing = area < 0;
 	
-	if (f.backfacing) return; // cull
+	if (backfacing) return; // cull
 
 //	if (f.backfacing) {
 //		std::swap(p1, p3);
 //	}
 
-	binner.insert(p1, p2, p3, f);
+	binner.insert(p1, p2, p3, backfacing, f);
 }
 
 
@@ -563,13 +563,20 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 	wire_shader.setColor(vec4(1, 0.66, 0.33, 0));
 
 	auto& bin = binner.bins[bin_idx];
-	for (auto& face : bin.faces) {
 
-		if (face.backfacing) continue;
+	unsigned fi = 0;
+	unsigned vi = 0;
+	while (fi < bin.faces.size()) {
 
-		const auto& v0_f = vlst_f[face.ivp[0]];
-		const auto& v1_f = vlst_f[face.ivp[1]];
-		const auto& v2_f = vlst_f[face.ivp[2]];
+		const auto& face = bin.faces[fi];
+		const auto& backfacing = bin.backfacing[fi];
+		const auto& v0_f = bin.vf[vi];
+		const auto& v1_f = bin.vf[vi+1];
+		const auto& v2_f = bin.vf[vi+2];
+		fi++;
+		vi += 3;
+
+		if (backfacing) continue;
 
 		Material& mat = materialstore.store[face.mf];
 
