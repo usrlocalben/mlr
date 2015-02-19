@@ -58,10 +58,7 @@ mat4 create_opengl_pinf(const float left, const float right, const float top, co
 
 
 
-Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, const float fovy)
-	:width(sx),
-	height(sy),
-	//aspect = sx/sy // 4:3 is 1.333
+Viewport::Viewport(const float aspect, const float fovy) :
 	aspect(aspect),
 	fovy(fovy),
 	znear(1),
@@ -75,31 +72,6 @@ Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, con
 
 	mp = create_opengl_p(left, right, top, bottom, znear, zfar);
 
-	const auto x0 = 0;
-	const auto y0 = 0;
-	const auto y1 = sy;
-	const auto x1 = sx;
-
-	auto md_yfix = mat4_init(
-		   1,        0,       0,       0,
-		   0,       -1,       0,       0,
-		   0,        0,       1,       0,
-		   0,        0,       0,       1);
-
-	auto md_scale = mat4_init(
-		width/2,     0,       0,       0,
-		   0,    height/2,    0,       0,
-		   0,        0,       1,       0, //zfar-znear,  0,
-		   0,        0,       0,       1);
-
-	auto md_origin = mat4_init(
-		   1,        0,       0,  x0+width /2,
-		   0,        1,       0,  y0+height/2,
-		   0,        0,       1,       0,
-		   0,        0,       0,       1);
-
-	md = mat4_mul(md_origin, mat4_mul(md_scale, md_yfix));
-
 	frust[0] = Plane::from_origin({ mp.f[0][3] + mp.f[0][0], mp.f[1][3] + mp.f[1][0], mp.f[2][3] + mp.f[2][0], mp.f[3][3] + mp.f[3][0] });	// left		(facing right)
 	frust[1] = Plane::from_origin({ mp.f[0][3] + mp.f[0][1], mp.f[1][3] + mp.f[1][1], mp.f[2][3] + mp.f[2][1], mp.f[3][3] + mp.f[3][1] });	// bottom	(facing up)
 	frust[2] = Plane::from_origin({ mp.f[0][3] + mp.f[0][2], mp.f[1][3] + mp.f[1][2], mp.f[2][3] + mp.f[2][2], mp.f[3][3] + mp.f[3][2] });	// front	(facing back)
@@ -109,6 +81,7 @@ Viewport::Viewport(const unsigned sx, const unsigned sy, const float aspect, con
 }
 
 
+/*
 void Viewport::test()
 {
 	cout << "plane 0: " << frust[0] << " - left, facing right" << endl;
@@ -192,4 +165,36 @@ void Viewport::test()
 	cout << "inside? " << (sim1_inside ? "yes" : "no") << endl;
 	_getch();
 	//exit(1);
+}*/
+
+
+
+Viewdevice::Viewdevice(const int sx, const int sy)
+	:width(sx), height(sy)
+{
+	const auto x0 = 0;
+	const auto y0 = 0;
+	const auto y1 = height;
+	const auto x1 = width;
+
+	auto md_yfix = mat4_init(
+		   1,        0,       0,       0,
+		   0,       -1,       0,       0,
+		   0,        0,       1,       0,
+		   0,        0,       0,       1);
+
+	auto md_scale = mat4_init(
+		width/2,     0,       0,       0,
+		   0,    height/2,    0,       0,
+		   0,        0,       1,       0, //zfar-znear,  0,
+		   0,        0,       0,       1);
+
+	auto md_origin = mat4_init(
+		   1,        0,       0,  x0+width /2,
+		   0,        1,       0,  y0+height/2,
+		   0,        0,       1,       0,
+		   0,        0,       0,       1);
+
+	md = mat4_mul(md_origin, mat4_mul(md_scale, md_yfix));
 }
+

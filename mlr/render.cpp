@@ -137,6 +137,7 @@ void Binner::insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3)
 
 void Binner::insert_gltri(
 	const Viewport& vp,
+	const Viewdevice& vpd,
 	const vec4 * const pv,
 	const vec4 * const pn,
 	const vec4 * const pc,
@@ -145,9 +146,9 @@ void Binner::insert_gltri(
 	const int material_id
 )
 {
-	auto p1 = vp.eye_to_device(pv[i0]);
-	auto p2 = vp.eye_to_device(pv[i1]);
-	auto p3 = vp.eye_to_device(pv[i2]);
+	auto p1 = vpd.clip_to_device(vp.eye_to_clip(pv[i0]));
+	auto p2 = vpd.clip_to_device(vp.eye_to_clip(pv[i1]));
+	auto p3 = vpd.clip_to_device(vp.eye_to_clip(pv[i2]));
 
 	const auto d31 = p3 - p1;
 	const auto d21 = p2 - p1;
@@ -237,7 +238,7 @@ void Pipedata::setup(const int thread_number, const int thread_count)
 }
 
 
-void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
+void Pipedata::addFace(const Viewport& vp, const Viewdevice& vpd, const Face& fsrc)
 {
 	const int vidx1 = fsrc.ivp[0] + vbase;
 	const int vidx2 = fsrc.ivp[1] + vbase;
@@ -256,7 +257,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 	const unsigned required_clipping = pv1_cf | pv2_cf | pv3_cf;
 	if (required_clipping == 0) {
 		// all inside
-		process_face(fsrc.make_rebased(vbase, tbase, nbase), vp);
+		process_face(fsrc.make_rebased(vbase, tbase, nbase), vp, vpd);
 		return;
 	}
 
@@ -342,7 +343,7 @@ void Pipedata::addFace(const Viewport& vp, const Face& fsrc)
 			a_vidx[0], a_vidx[a], a_vidx[a + 1],
 			a_tidx[0], a_tidx[a], a_tidx[a + 1],
 			a_nidx[0], a_nidx[a], a_nidx[a + 1]);
-		process_face(f, vp);
+		process_face(f, vp, vpd);
 	}
 
 }
@@ -384,11 +385,11 @@ __forceinline void Pipedata::addVertex(const Viewport& vp, const vec4& src, cons
 }
 
 
-void Pipedata::process_face(PFace& f, const Viewport& vp)
+void Pipedata::process_face(PFace& f, const Viewport& vp, const Viewdevice& vpd)
 {
-	vec4 p1 = vp.eye_to_device(vlst_p[f.ivp[0]]);
-	vec4 p2 = vp.eye_to_device(vlst_p[f.ivp[1]]);
-	vec4 p3 = vp.eye_to_device(vlst_p[f.ivp[2]]);
+	vec4 p1 = vpd.clip_to_device(vp.eye_to_clip(vlst_p[f.ivp[0]]));
+	vec4 p2 = vpd.clip_to_device(vp.eye_to_clip(vlst_p[f.ivp[1]]));
+	vec4 p3 = vpd.clip_to_device(vp.eye_to_clip(vlst_p[f.ivp[2]]));
 
 	const vec4 d31 = p3 - p1;
 	const vec4 d21 = p2 - p1;
@@ -406,7 +407,7 @@ void Pipedata::process_face(PFace& f, const Viewport& vp)
 }
 
 
-void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp)
+void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp, const Viewdevice& vpd)
 {
 	const Mesh& mesh = *mi.mesh;
 
@@ -432,7 +433,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& v
 			sm.mesh = mi.mesh;
 			sm.c2o = mat4_inverse(to_camera);
 			sm.vbase = vlst_p.size();
-//			build_shadows(vp, 0, sm);
+//			build_shadows(vp, vpd, 0, sm);
 		}
 
 		begin_batch();
@@ -446,7 +447,7 @@ void Pipedata::addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& v
 		Face face;
 		mi.fbegin(thread_number);
 		for (; mi.fnext(thread_number, face); ) {
-			addFace(vp, face);
+			addFace(vp, vpd, face);
 		}
 //		for (auto& face : mesh.faces)
 //			addFace(face);
@@ -479,9 +480,9 @@ void Pipeline::render_thread(const int thread_number)
 			cb->clear(tilerect, this->clear_color_rgb);
 		}
 		for (int ti = 0; ti < threads; ti++) {
-			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
-			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
-			pipes[ti].render_rect(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vp, idx);
+			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx);
+			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx);
+			pipes[ti].render_rect(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx);
 //			mark(false);
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
@@ -500,8 +501,10 @@ void Pipeline::addLight(const Light& light)
 
 void Pipeline::process_thread(const int thread_number){
 	auto& pipe = this->pipes[thread_number];
-	for (auto& mesh : this->meshlist) {
-		pipe.addMeshy(*mesh, camera_inverse, *vp);
+	for (unsigned i = 0; i < this->meshlist.size(); i++ ) {
+		auto& mesh = this->meshlist[i];
+		auto& vp = *this->viewlist[i];
+		pipe.addMeshy(*mesh, camera_inverse, vp, *vpd);
 	}
 	telemetry.mark(thread_number);
 }
@@ -550,7 +553,7 @@ void Pipeline::render()
 
 
 
-void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
+void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx)
 {
 	FlatShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -587,17 +590,17 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-			tex_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+			tex_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
 			draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
 		}
 		else {
 			if (1) {
 				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				my_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				my_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
 				draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp.width, vp.height, v0_f, v1_f, v2_f);
+				wire_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
 				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
 			}
 		}
@@ -606,7 +609,7 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 }
 
 
-void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3)
+void Pipedata::add_shadow_triangle(const Viewport& vp, const Viewdevice& vpd, const vec4& p1, const vec4& p2, const vec4& p3)
 {
 	unsigned char cf[3];
 
@@ -626,9 +629,9 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 	if (required_clipping == 0) {
 		// all inside
 		binner.insert_shadow(
-			vp.eye_to_device(pv[0]),
-			vp.eye_to_device(pv[1]),
-			vp.eye_to_device(pv[2])
+			vpd.clip_to_device(vp.eye_to_clip(pv[0])),
+			vpd.clip_to_device(vp.eye_to_clip(pv[1])),
+			vpd.clip_to_device(vp.eye_to_clip(pv[2]))
 			);
 		return;
 	}
@@ -682,14 +685,14 @@ void Pipedata::add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec
 
 	for (int a=1; a<pvcnt-1; a++) {
 		binner.insert_shadow(
-			vp.eye_to_device(pv[0]),
-			vp.eye_to_device(pv[a]),
-			vp.eye_to_device(pv[a+1])
+			vpd.clip_to_device(vp.eye_to_clip(pv[0])),
+			vpd.clip_to_device(vp.eye_to_clip(pv[a])),
+			vpd.clip_to_device(vp.eye_to_clip(pv[a+1]))
 			);
 	}
 }
 
-void Pipedata::build_shadows(const Viewport& vp, const int light_id, const ShadowMesh& svmesh)
+void Pipedata::build_shadows(const Viewport& vp, const Viewdevice& vpd, const int light_id, const ShadowMesh& svmesh)
 {
 	auto& light = this->llst[light_id];
 	const vec4 * const vb = &vlst_p[svmesh.vbase];
@@ -710,7 +713,7 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id, const Shado
 			auto p1 = extrude_to_infinity(vb[face.ivp[0]], light.position);
 			auto p2 = extrude_to_infinity(vb[face.ivp[1]], light.position);
 			auto p3 = extrude_to_infinity(vb[face.ivp[2]], light.position);
-			add_shadow_triangle(vp, p1, p2, p3);
+			add_shadow_triangle(vp, vpd, p1, p2, p3);
 		} else {               // facing towards lightA
 			vec4 edge_a[3];
 			vec4 edge_b[3];
@@ -735,20 +738,20 @@ void Pipedata::build_shadows(const Viewport& vp, const int light_id, const Shado
 				auto& nb = edge_b[i];
 				auto fa = extrude_to_infinity(na, light.position);
 				auto fb = extrude_to_infinity(nb, light.position);
-				add_shadow_triangle(vp, na, nb, fb); // quad na->nb->fb->fa
-				add_shadow_triangle(vp, na, fb, fa);
+				add_shadow_triangle(vp, vpd, na, nb, fb); // quad na->nb->fb->fa
+				add_shadow_triangle(vp, vpd, na, fb, fa);
 			}
 			//front cap
 			auto& c1 = vb[face.ivp[0]];
 			auto& c2 = vb[face.ivp[1]];
 			auto& c3 = vb[face.ivp[2]];
-			add_shadow_triangle(vp, c1, c2, c3);
+			add_shadow_triangle(vp, vpd, c1, c2, c3);
 		}
 	}
 }
 
 
-void Pipedata::process_gltri(const Viewport& vp, const int material_id)
+void Pipedata::process_gltri(const Viewport& vp, const Viewdevice& vpd, const int material_id)
 {
 	unsigned char cf[3];
 
@@ -768,7 +771,7 @@ void Pipedata::process_gltri(const Viewport& vp, const int material_id)
 	const unsigned required_clipping = cf[0] | cf[1] | cf[2];
 	if (required_clipping == 0) {
 		// all inside
-		binner.insert_gltri(vp, tri_eye, tri_nor, tri_col, tri_tex, 0, 1, 2, material_id);
+		binner.insert_gltri(vp, vpd, tri_eye, tri_nor, tri_col, tri_tex, 0, 1, 2, material_id);
 		return;
 	}
 
@@ -838,7 +841,7 @@ void Pipedata::process_gltri(const Viewport& vp, const int material_id)
 	if (pvcnt == 0) return;
 
 	for (int a=1; a<pvcnt-1; a++) {
-		binner.insert_gltri(vp, tri_eye, tri_nor, tri_col, tri_tex, 0, a, a+1, material_id);
+		binner.insert_gltri(vp, vpd, tri_eye, tri_nor, tri_col, tri_tex, 0, a, a+1, material_id);
 	}
 }
 
@@ -852,7 +855,7 @@ struct VertexData {
 };
 #pragma pack()
 
-void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
+void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx)
 {
 	ShadedShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -889,18 +892,18 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 			tex_shader.setColorBuffer(cb);
 			tex_shader.setDepthBuffer(db);
 			tex_shader.setUV(v0.t, v1.t, v2.t);
-			tex_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+			tex_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
 			draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
 		}
 		else {
 			if (1) {
 //				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
 				my_shader.setColor(v0.c, v1.c, v2.c);
-				my_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+				my_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			} else {
 				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-				wire_shader.setup(vp.width, vp.height, v0.f, v1.f, v2.f);
+				wire_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
 				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
 			}
 		}
@@ -909,7 +912,7 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 }
 
 
-void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewport& vp, const int bin_idx)
+void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx)
 {
 	auto& bin = binner.bins[bin_idx];
 	const irect& tilerect = bin.rect;
@@ -927,7 +930,7 @@ void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, Mat
 			//const auto texunit = ts_pow2_direct_nearest<8>(&tex->b[0]);
 			//DistortShader<ts_pow2_direct_nearest<8>> the_shader(texunit);
 			the_shader.setColorBuffer(cb);
-			the_shader.setup(vp.width, vp.height);
+			the_shader.setup(vpd.width, vpd.height);
 			for (int pi=0; pi<rvals; pi++) {
 				const float val = this->rectdata[fi++];
 				the_shader.setParam(pi, val);
@@ -938,7 +941,7 @@ void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, Mat
 			const auto texunit = ts_any_direct_nearest(&tex->b[0], tex->width, tex->height);
 			OverlayShader<ts_any_direct_nearest> the_shader(texunit);
 			the_shader.setColorBuffer(cb);
-			the_shader.setup(vp.width, vp.height, tex->width, tex->height);
+			the_shader.setup(vpd.width, vpd.height, tex->width, tex->height);
 			for (int pi=0; pi<rvals; pi++) {
 				const float val = this->rectdata[fi++];
 				the_shader.setParam(pi, val);

@@ -48,6 +48,7 @@ public:
 	void insert_shadow(const vec4& p1, const vec4& p2, const vec4& p3);
 	void insert_gltri(
 		const Viewport& vp,
+		const Viewdevice& vpd,
 		const vec4 * const pv,
 		const vec4 * const pn,
 		const vec4 * const pc,
@@ -76,9 +77,9 @@ class Pipedata {
 public:
 	void setup(const int thread_number, const int thread_count);
 
-	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp);
-	void add_shadow_triangle(const Viewport& vp, const vec4& p1, const vec4& p2, const vec4& p3);
-	void build_shadows(const Viewport& vp, const int light_id, const struct ShadowMesh& svmesh);
+	void addMeshy(Meshy& mi, const mat4& camera_inverse, const Viewport& vp, const Viewdevice& vpd);
+	void add_shadow_triangle(const Viewport& vp, const Viewdevice& vpd, const vec4& p1, const vec4& p2, const vec4& p3);
+	void build_shadows(const Viewport& vp, const Viewdevice& vpd, const int light_id, const struct ShadowMesh& svmesh);
 
 	void reset(const int width, const int height) {
 		vlst_p.clear(); vlst_cf.clear();
@@ -91,14 +92,14 @@ public:
 		rectdata.clear();
 		rectbyte.clear();
 	}
-	void addFace(const Viewport& vp, const Face& fsrc);
+	void addFace(const Viewport& vp, const Viewdevice& vpd, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
 	void addUV(const vec4& src);
 	void addLight(const mat4& camera_inverse, const Light& light);
 	Binner binner;
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
-	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
-	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewport& vp, const int bin_idx);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
+	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
+	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 
@@ -120,7 +121,7 @@ private:
 		nbase = nlst.size();
 		batch_in_progress = 0;
 	}
-	void process_face(PFace& f, const Viewport& vp);
+	void process_face(PFace& f, const Viewport& vp, const Viewdevice& vpd);
 
 	// indexed buffers api
 	vectorsse<vec4> vlst_p;
@@ -167,10 +168,12 @@ private:
 	vec4 tri_tex[16];
 	vec4 tri_eye[16];
 	const Viewport * batch_vp;
+	const Viewdevice * batch_vpd;
 public:
-	void glBegin(const Viewport& vp) {
+	void glBegin(const Viewport& vp, const Viewdevice& vpd) {
 		vertex_idx = 0;
 		batch_vp = &vp;
+		batch_vpd = &vpd;
 		cur_mat = 0;
 	}
 	void glEnd() {
@@ -188,12 +191,12 @@ public:
 		tri_eye[vertex_idx] = v;  // early clip optimization?
 		vertex_idx++;
 		if (vertex_idx == 3) {
-		    process_gltri(*batch_vp, cur_mat);
+		    process_gltri(*batch_vp, *batch_vpd, cur_mat);
 		    vertex_idx = 0;
 		}
 	}
 private:
-	void process_gltri(const Viewport& vp, const int material_id);
+	void process_gltri(const Viewport& vp, const Viewdevice& vpd, const int material_id);
 
 };
 
@@ -206,18 +209,20 @@ public:
 	Pipeline(const int threads, class Telemetry& telemetry);
 	~Pipeline();
 
-	void addMeshy(Meshy& mi) {
+	void addMeshy(Meshy& mi, const Viewport * vp) {
 		meshlist.push_back(&mi);
+		viewlist.push_back(vp);
 	}
 
 	void addLight(const Light& li);
-	void setViewport(const Viewport * const vp) { this->vp = vp; }
+//XXX	void setViewport(const Viewport * const vp) { this->vp = vp; }
+	void setViewdevice(const Viewdevice * const vpd) { this->vpd = vpd; }
 
 	void reset(const int width, const int height) {
 		for (auto& item : pipes) {
 			item.reset(width, height);
 		}
-		meshlist.clear();
+		meshlist.clear();  viewlist.clear();
 		framecounter++;
 	}
 
@@ -267,12 +272,13 @@ private:
 	const int threads;
 	Pipedata pipes[16];
 	std::vector<Meshy*> meshlist;
+	std::vector<const Viewport *> viewlist;
 
 	mat4 camera;
 	mat4 camera_inverse;
 
 	int framecounter;
-	const Viewport * vp;
+	const Viewdevice * vpd;
 	std::vector<binstat> bin_index;
 
 	struct SOADepth * db;
