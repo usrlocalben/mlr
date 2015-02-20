@@ -25,6 +25,11 @@ T lerp(const T& a, const T& b, const T& f) {
 	return (1 - f)*a + f*b;
 }
 
+template<typename T>
+T lerp_premul(const T& a, const T& b, const T& f) {
+	return (T(1) - f)*a + b;
+}
+
 /*
 template<typename T>
 T clamp(const T a, const T x, const T y) {
