@@ -26,7 +26,7 @@ public:
 		target_value = a;
 	}
 
-	void run(Pipedata& pipe, const mat4& xform, const int thread_number, const int thread_count)
+	void run(Pipedata& pipe, const int thread_number, const int thread_count)
 	{
 		auto scale = vec4(step_size, step_size, step_size, 1);
 		auto halfscale = scale * vec4(0.5, 0.5, 0.5, 0);
@@ -44,7 +44,7 @@ public:
 					if (distance > cube_radius) {
 						ax = distance - cube_radius;
 					} else {
-						run_cube(pipe, xform, pos, step_size);
+						run_cube(pipe, pos, step_size);
 					}
 				}
 			}
@@ -93,7 +93,7 @@ public:
 	}
 	*/
 
-	void run_cube(Pipedata& pipe, const mat4& xform, const vec4& pos, float scale)
+	void run_cube(Pipedata& pipe, const vec4& pos, float scale)
 	{
 		float cube_value[8];
 		vec4 edge_vertex[12];
@@ -129,7 +129,7 @@ public:
 				auto color = calc_color(edge_vertex[vertex], edge_normal[vertex]);
 				pipe.glColor(color);
 				pipe.glNormal(edge_normal[vertex]);
-				pipe.glVertex(mat4_mul(xform,edge_vertex[vertex]));
+				pipe.glVertex(edge_vertex[vertex]);
 			}
 		}
 	}

@@ -169,12 +169,14 @@ private:
 	vec4 tri_eye[16];
 	const Viewport * batch_vp;
 	const Viewdevice * batch_vpd;
+	mat4 model_view_matrix;
 public:
-	void glBegin(const Viewport& vp, const Viewdevice& vpd) {
+	void glBegin(const Viewport& vp, const Viewdevice& vpd, const mat4& object_to_world) {
 		vertex_idx = 0;
 		batch_vp = &vp;
 		batch_vpd = &vpd;
 		cur_mat = 0;
+		model_view_matrix = object_to_world;
 	}
 	void glEnd() {
 		//assert(vertex_idx==0);
@@ -188,7 +190,7 @@ public:
 		tri_nor[vertex_idx] = cur_nor;
 		tri_col[vertex_idx] = cur_col;
 		tri_tex[vertex_idx] = cur_tex;
-		tri_eye[vertex_idx] = v;  // early clip optimization?
+		tri_eye[vertex_idx] = mat4_mul(model_view_matrix, v);  // early clip optimization?
 		vertex_idx++;
 		if (vertex_idx == 3) {
 		    process_gltri(*batch_vp, *batch_vpd, cur_mat);
