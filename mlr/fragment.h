@@ -73,16 +73,17 @@ public:
 		offs++; // += offs_inc;
 	}
 
-	__forceinline vec4 colorproc(const vec4& o, const vec4& n, const ivec4& mask) {
+	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) {
 		return selectbits(o, n, mask);
 		//return o + (n &bits2float(mask));
+		//return lerp_premul(o, n, selectbits(vec4(0),alpha,mask))
 	}
 
-	__forceinline void colorout(const qfloat4& n, const ivec4& mask) {
+	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) {
 		auto cbx = cb+offs;
-		colorproc(vec4::load(&cbx->r), n.v[0], mask).store(&cbx->r);
-		colorproc(vec4::load(&cbx->g), n.v[1], mask).store(&cbx->g);
-		colorproc(vec4::load(&cbx->b), n.v[2], mask).store(&cbx->b);
+		colorproc(vec4::load(&cbx->r), n.v[0], n.v[3], mask).store(&cbx->r);
+		colorproc(vec4::load(&cbx->g), n.v[1], n.v[3], mask).store(&cbx->g);
+		colorproc(vec4::load(&cbx->b), n.v[2], n.v[3], mask).store(&cbx->b);
 	}
 
 	__forceinline void depthwrite(const qfloat& old_depth, const qfloat& new_depth, const ivec4& mask) {
