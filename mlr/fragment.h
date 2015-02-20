@@ -411,4 +411,38 @@ public:
 	}
 };
 
+
+template <typename TEXTURE_UNIT>
+class TextureShaderAlpha : public FlatShader {
+public:
+	const TEXTURE_UNIT & texunit;
+	vertex_float2 vert_uv;
+	inline TextureShaderAlpha(const TEXTURE_UNIT& tu) :texunit(tu){}
+
+	void setUV(const vec4& c1, const vec4& c2, const vec4& c3) {
+		vert_uv.fill(c1, c2, c3);
+	}
+
+	virtual __forceinline void fragment(qfloat4& frag_color, ivec4& frag_mask, const qfloat2& frag_coord, const qfloat& frag_depth, const vertex_float& BS, const vertex_float& BP) const {
+		qfloat2 frag_uv = vertex_blend(BP, vert_uv);
+
+		qfloat4 texpx;
+		texunit.sample(frag_uv, texpx);
+		frag_color = texpx; // .set(texpx);
+	}
+	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) {
+		//return selectbits(o, n, mask);
+		//return o + (n &bits2float(mask));
+		//return lerp_premul(o, n, alpha);
+		return lerp_premul(o, n, selectbits(vec4(0),alpha,mask))
+	}
+
+	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) {
+		auto cbx = cb+offs;
+		colorproc(vec4::load(&cbx->r), n.v[0], n.v[3], mask).store(&cbx->r);
+		colorproc(vec4::load(&cbx->g), n.v[1], n.v[3], mask).store(&cbx->g);
+		colorproc(vec4::load(&cbx->b), n.v[2], n.v[3], mask).store(&cbx->b);
+	}
+};
+
 #endif //__FRAGMENT_H
