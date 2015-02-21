@@ -91,6 +91,8 @@ public:
 		binner.reset(width, height);
 		rectdata.clear();
 		rectbyte.clear();
+
+		glReset();
 	}
 	void addFace(const Viewport& vp, const Viewdevice& vpd, const Face& fsrc);
 	void addNormal(const vec4& src, const mat4& m);
@@ -169,14 +171,43 @@ private:
 	vec4 tri_eye[16];
 	const Viewport * batch_vp;
 	const Viewdevice * batch_vpd;
-	mat4 model_view_matrix;
+	mat4 mv_matrix[32];
+	int mv_matrix_sp;
 public:
-	void glBegin(const Viewport& vp, const Viewdevice& vpd, const mat4& object_to_world) {
+	void glReset() {
+		mv_matrix_sp = 0;
+		mv_matrix[0] = mat4::ident();
+	}
+	void glPushMatrix() {
+		mv_matrix[mv_matrix_sp+1] = mv_matrix[mv_matrix_sp];
+		mv_matrix_sp++;
+	}
+	void glPopMatrix() {
+		mv_matrix_sp--;
+	}
+	void glTranslate(const vec4& a) {
+		mv_matrix[mv_matrix_sp] = mat4_mul(mv_matrix[mv_matrix_sp], mat4::position(a));
+	}
+	void glTranslate(const vec3& a) {
+		mv_matrix[mv_matrix_sp] = mat4_mul(mv_matrix[mv_matrix_sp], mat4::position(a));
+	}
+	void glScale(const vec4& a) {
+		mv_matrix[mv_matrix_sp] = mat4_mul(mv_matrix[mv_matrix_sp], mat4::scale(a));
+	}
+	void glScale(const vec3& a) {
+		mv_matrix[mv_matrix_sp] = mat4_mul(mv_matrix[mv_matrix_sp], mat4::scale(a));
+	}
+	void glLoadIdentity() {
+		mv_matrix[mv_matrix_sp] = mat4::ident();
+	}
+	void glLoadMatrix(const mat4& m) {
+		mv_matrix[mv_matrix_sp] = m;
+	}
+	void glBegin(const Viewport& vp, const Viewdevice& vpd) {
 		vertex_idx = 0;
 		batch_vp = &vp;
 		batch_vpd = &vpd;
 		cur_mat = 0;
-		model_view_matrix = object_to_world;
 	}
 	void glEnd() {
 		//assert(vertex_idx==0);
@@ -190,7 +221,7 @@ public:
 		tri_nor[vertex_idx] = cur_nor;
 		tri_col[vertex_idx] = cur_col;
 		tri_tex[vertex_idx] = cur_tex;
-		tri_eye[vertex_idx] = mat4_mul(model_view_matrix, v);  // early clip optimization?
+		tri_eye[vertex_idx] = mat4_mul(mv_matrix[mv_matrix_sp], v);  // early clip optimization?
 		vertex_idx++;
 		if (vertex_idx == 3) {
 		    process_gltri(*batch_vp, *batch_vpd, cur_mat);
