@@ -172,7 +172,7 @@ __forceinline void fpp_gather(const FloatingPointPixel * const __restrict src, c
 	px[1].v = _mm_load_ps(reinterpret_cast<const float*>(&src[offsets.y]));
 	px[2].v = _mm_load_ps(reinterpret_cast<const float*>(&src[offsets.z]));
 	px[3].v = _mm_load_ps(reinterpret_cast<const float*>(&src[offsets.w]));
-	transpose4(px);
+	_MM_TRANSPOSE4_PS(px[0].v, px[1].v, px[2].v, px[3].v);
 }
 
 
@@ -221,6 +221,7 @@ struct ts_pow2_mipmap {
 		px[1].v = _mm_load_ps((float*)&texdata[offset.y]);
 		px[2].v = _mm_load_ps((float*)&texdata[offset.z]);
 		px[3].v = _mm_load_ps((float*)&texdata[offset.w]);
+		_MM_TRANSPOSE4_PS(px[0].v, px[1].v, px[2].v, px[3].v);
 	}
 
 	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
@@ -257,10 +258,10 @@ struct ts_pow2_mipmap {
 		const vec4 w4(fx  * fy);
 
 		// temporary load p1 AoS data by lane, then transpose to make SoA rrrr/gggg/bbbb/aaaa
-		vec4 p1[4]; fetch_texel(offset, mip_size, tx0, ty0, p1); transpose4(p1);
-		vec4 p2[4]; fetch_texel(offset, mip_size, tx1, ty0, p2); transpose4(p2);
-		vec4 p3[4]; fetch_texel(offset, mip_size, tx0, ty1, p3); transpose4(p3);
-		vec4 p4[4]; fetch_texel(offset, mip_size, tx1, ty1, p4); transpose4(p4);
+		vec4 p1[4]; fetch_texel(offset, mip_size, tx0, ty0, p1);
+		vec4 p2[4]; fetch_texel(offset, mip_size, tx1, ty0, p2);
+		vec4 p3[4]; fetch_texel(offset, mip_size, tx0, ty1, p3);
+		vec4 p4[4]; fetch_texel(offset, mip_size, tx1, ty1, p4);
 
 		px.v[0] = p1[0] * w1 + p2[0] * w2 + p3[0] * w3 + p4[0] * w4;
 		px.v[1] = p1[1] * w1 + p2[1] * w2 + p3[1] * w3 + p4[1] * w4;
@@ -292,6 +293,7 @@ struct ts_pow2_mipmap_nearest {
 		px[1].v = _mm_load_ps((float*)&texdata[offset.y]);
 		px[2].v = _mm_load_ps((float*)&texdata[offset.z]);
 		px[3].v = _mm_load_ps((float*)&texdata[offset.w]);
+		_MM_TRANSPOSE4_PS(px[0].v, px[1].v, px[2].v, px[3].v);
 	}
 
 	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
@@ -310,7 +312,7 @@ struct ts_pow2_mipmap_nearest {
 		vec4 vp(uv.v[1] * texsize);
 
 		// temporary load p1 AoS data by lane, then transpose to make SoA rrrr/gggg/bbbb/aaaa
-		fetch_texel(offset, mip_size, ftoi(up), ftoi(vp), px.v); transpose4(px.v);
+		fetch_texel(offset, mip_size, ftoi(up), ftoi(vp), px.v);
 	}
 
 };
@@ -336,6 +338,7 @@ struct ts_pow2_direct_nearest {
 		px[1].v = _mm_load_ps((float*)&texdata[offset.y]);
 		px[2].v = _mm_load_ps((float*)&texdata[offset.z]);
 		px[3].v = _mm_load_ps((float*)&texdata[offset.w]);
+		_MM_TRANSPOSE4_PS(px[0].v, px[1].v, px[2].v, px[3].v);
 	}
 
 	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
@@ -343,7 +346,6 @@ struct ts_pow2_direct_nearest {
 		vec4 up(uv.v[0] * fstride);
 		vec4 vp(uv.v[1] * fstride);
 		fetch_texel(ftoi(up), ftoi(vp), px.v);
-		transpose4(px.v);
 	}
 
 };
@@ -378,6 +380,7 @@ struct ts_any_direct_nearest {
 				px[i] = vec4::zero();
 			}
 		}
+		_MM_TRANSPOSE4_PS(px[0].v, px[1].v, px[2].v, px[3].v);
 	}
 
 	__forceinline void sample(const qfloat2& uv, qfloat4& px) const
@@ -385,7 +388,6 @@ struct ts_any_direct_nearest {
 		vec4 up(uv.v[0] * fw);
 		vec4 vp(uv.v[1] * -fh);
 		fetch_texel(ftoi(up), ftoi(vp), px.v);
-		transpose4(px.v);
 	}
 
 };
