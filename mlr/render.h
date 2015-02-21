@@ -37,6 +37,7 @@ struct Tilebin {
 		faces.clear();
 		sv.clear();
 
+		glface.clear();
 		gldata.clear();
 	}
 };
