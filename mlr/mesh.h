@@ -27,6 +27,7 @@ struct Material {
 	vec3 ks;
 	float specpow;
 	float d;
+	int pass;
 	std::string name;
 	std::string imagename;
 	std::string shader;

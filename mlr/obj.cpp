@@ -91,6 +91,7 @@ struct ObjMaterial {
 		mm.name = name;
 		mm.imagename = texture;
 		mm.shader = "obj";
+		mm.pass = 0; // assume pass 0 by default
 		return mm;
 	}
 };

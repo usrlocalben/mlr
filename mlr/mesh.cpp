@@ -174,7 +174,7 @@ void Material::print() const
 	cout << "ks" << this->ks << endl;
 	cout << "  specpow(" << this->specpow << "), density(" << this->d << ")" << endl;
 	cout << "  texture[" << this->imagename << "]" << endl;
-
+	cout << "pass: " << this->pass << endl;
 }
 
 

@@ -100,8 +100,8 @@ public:
 	void addUV(const vec4& src);
 	void addLight(const mat4& camera_inverse, const Light& light);
 	Binner binner;
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
-	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes);
+	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes);
 	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
@@ -299,6 +299,9 @@ public:
 	void setMaterialStore(class MaterialStore& materialstore) {
 		this->materialstore = &materialstore;
 	}
+	void setPasses(const int passes) {
+		this->passes = passes;
+	}
 	void setTextureStore(class TextureStore& texturestore) {
 		this->texturestore = &texturestore;
 	}
@@ -326,6 +329,7 @@ private:
 	struct SOADepth * db;
 	struct SOACanvas * cb;
 	class MaterialStore * materialstore;
+	int passes;
 	class TextureStore * texturestore;
 	TrueColorPixel * __restrict target;
 	int target_width;
