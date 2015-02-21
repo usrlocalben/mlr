@@ -436,7 +436,7 @@ public:
 		//return selectbits(o, n, mask);
 		//return o + (n &bits2float(mask));
 		//return lerp_premul(o, n, alpha);
-		return lerp_premul(o, n, selectbits(vec4(0), alpha, mask));
+		return selectbits(o, lerp_premul(o, n, alpha), mask);
 	}
 
 	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) const {
