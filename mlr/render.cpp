@@ -479,11 +479,13 @@ void Pipeline::render_thread(const int thread_number)
 		if (this->clear_color_enable) {
 			cb->clear(tilerect, this->clear_color_rgb);
 		}
-		for (int ti = 0; ti < threads; ti++) {
-			pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx, passes);
-			pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx, passes);
-			pipes[ti].render_rect(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx);
-//			mark(false);
+		for (int pass = 0; pass < passes; pass++) {
+			for (int ti = 0; ti < threads; ti++) {
+				pipes[ti].render(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx, pass);
+				pipes[ti].render_gltri(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx, pass);
+				pipes[ti].render_rect(db->rawptr(), cb->rawptr(), *materialstore, *texturestore, *vpd, idx, pass);
+				//			mark(false);
+			}
 		}
 		convertCanvas(tilerect, target_width, target, cb->rawptr(), PostprocessNoop());
 		telemetry.mark(thread_number);
@@ -553,7 +555,7 @@ void Pipeline::render()
 
 
 
-void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes)
+void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass)
 {
 	FlatShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -567,51 +569,47 @@ void Pipedata::render(__m128 * __restrict db, SOAPixel * __restrict cb, Material
 
 	auto& bin = binner.bins[bin_idx];
 
-	for (int renderpass=0; renderpass<passes; renderpass++ ) {
+	unsigned fi = 0;
+	unsigned vi = 0;
+	while (fi < bin.faces.size()) {
 
-		unsigned fi = 0;
-		unsigned vi = 0;
-		while (fi < bin.faces.size()) {
+		const auto& face = bin.faces[fi];
+		const auto& backfacing = bin.backfacing[fi];
+		const auto& v0_f = bin.vf[vi];
+		const auto& v1_f = bin.vf[vi + 1];
+		const auto& v2_f = bin.vf[vi + 2];
+		fi++;
+		vi += 3;
 
-			const auto& face = bin.faces[fi];
-			const auto& backfacing = bin.backfacing[fi];
-			const auto& v0_f = bin.vf[vi];
-			const auto& v1_f = bin.vf[vi + 1];
-			const auto& v2_f = bin.vf[vi + 2];
-			fi++;
-			vi += 3;
+		if (backfacing) continue;
 
-			if (backfacing) continue;
+		Material& mat = materialstore.store[face.mf];
+		if (mat.pass != pass) continue;
 
-			Material& mat = materialstore.store[face.mf];
-			if (mat.pass != renderpass) continue;
-
-			if (mat.imagename != string("")) {
-				const auto tex = texturestore.find(mat.imagename);
-				const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
-				auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
-				tex_shader.setColorBuffer(cb);
-				tex_shader.setDepthBuffer(db);
-				tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
-				tex_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
-				draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
+		if (mat.imagename != string("")) {
+			const auto tex = texturestore.find(mat.imagename);
+			const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
+			auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
+			tex_shader.setColorBuffer(cb);
+			tex_shader.setDepthBuffer(db);
+			tex_shader.setUV(tlst[face.iuv[0]], tlst[face.iuv[1]], tlst[face.iuv[2]]);
+			tex_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
+			draw_triangle(bin.rect, v0_f, v1_f, v2_f, tex_shader);
+		}
+		else {
+			if (1) {
+				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				my_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
 			}
 			else {
-				if (1) {
-					my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-					my_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
-					draw_triangle(bin.rect, v0_f, v1_f, v2_f, my_shader);
-				}
-				else {
-					wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-					wire_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
-					draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
-				}
+				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				wire_shader.setup(vpd.width, vpd.height, v0_f, v1_f, v2_f);
+				draw_triangle(bin.rect, v0_f, v1_f, v2_f, wire_shader);
 			}
+		}
 
-		}//faces
-
-	}//renderpass
+	}//faces
 }
 
 
@@ -861,7 +859,7 @@ struct VertexData {
 };
 #pragma pack()
 
-void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes)
+void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass)
 {
 	ShadedShader my_shader;
 	my_shader.setColorBuffer(cb);
@@ -875,66 +873,64 @@ void Pipedata::render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, Ma
 
 	auto& bin = binner.bins[bin_idx];
 
-	for (int renderpass = 0; renderpass < passes; renderpass++) {
-		unsigned di = 0;
-		unsigned fi = 0;
-		while (di < bin.gldata.size()) {
+	unsigned di = 0;
+	unsigned fi = 0;
+	while (di < bin.gldata.size()) {
 
-			auto facedata = bin.glface[fi];
-			bool backfacing = (facedata & 0x80) > 0;
-			int material_id = facedata & 0x7f;
+		auto facedata = bin.glface[fi];
+		bool backfacing = (facedata & 0x80) > 0;
+		int material_id = facedata & 0x7f;
 
-			const auto& v0 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 0]);
-			const auto& v1 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 5]);
-			const auto& v2 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 10]);
-			di += 15; fi++;
+		const auto& v0 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 0]);
+		const auto& v1 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 5]);
+		const auto& v2 = *reinterpret_cast<VertexData*>(&bin.gldata[di + 10]);
+		di += 15; fi++;
 
-			if (backfacing) continue;
+		if (backfacing) continue;
 
-			Material& mat = materialstore.store[material_id];
-			if (mat.pass != renderpass) continue;
+		Material& mat = materialstore.store[material_id];
+		if (mat.pass != pass) continue;
 
-			if (mat.imagename != string("")) {
-				const auto tex = texturestore.find(mat.imagename);
-				if (tex->width == 256) {
-					const auto texunit = ts_pow2_direct_nearest<8>(&tex->b[0]);
-					auto tex_shader = TextureShaderAlphaNoZ<ts_pow2_direct_nearest<8>>(texunit);
-					tex_shader.setColorBuffer(cb);
-					tex_shader.setDepthBuffer(db);
-					tex_shader.setUV(v0.t, v1.t, v2.t);
-					tex_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
-					draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
-				}
-				else if (tex->width == 512) {
-					const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
-					auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
-					tex_shader.setColorBuffer(cb);
-					tex_shader.setDepthBuffer(db);
-					tex_shader.setUV(v0.t, v1.t, v2.t);
-					tex_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
-					draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
-				}
+		if (mat.imagename != string("")) {
+			const auto tex = texturestore.find(mat.imagename);
+			if (tex->width == 256) {
+				const auto texunit = ts_pow2_direct_nearest<8>(&tex->b[0]);
+				auto tex_shader = TextureShaderAlphaNoZ<ts_pow2_direct_nearest<8>>(texunit);
+				tex_shader.setColorBuffer(cb);
+				tex_shader.setDepthBuffer(db);
+				tex_shader.setUV(v0.t, v1.t, v2.t);
+				tex_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
+			}
+			else if (tex->width == 512) {
+				const auto texunit = ts_pow2_mipmap<9>(&tex->b[0]);
+				auto tex_shader = TextureShader<ts_pow2_mipmap<9>>(texunit);
+				tex_shader.setColorBuffer(cb);
+				tex_shader.setDepthBuffer(db);
+				tex_shader.setUV(v0.t, v1.t, v2.t);
+				tex_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, tex_shader);
+			}
+		}
+		else {
+			if (0) {
+				//				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				my_shader.setColor(v0.c, v1.c, v2.c);
+				my_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
 			}
 			else {
-				if (0) {
-					//				my_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-					my_shader.setColor(v0.c, v1.c, v2.c);
-					my_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
-					draw_triangle(bin.rect, v0.f, v1.f, v2.f, my_shader);
-				}
-				else {
-					wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
-					wire_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
-					draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
-				}
+				wire_shader.setColor(vec4(mat.kd.x, mat.kd.y, mat.kd.z, 0));
+				wire_shader.setup(vpd.width, vpd.height, v0.f, v1.f, v2.f);
+				draw_triangle(bin.rect, v0.f, v1.f, v2.f, wire_shader);
 			}
+		}
 
-		}// gldata
-	}// passes
+	}// gldata
 }
 
 
-void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx)
+void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, MaterialStore& materialstore, TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass)
 {
 	auto& bin = binner.bins[bin_idx];
 	const irect& tilerect = bin.rect;
@@ -946,6 +942,7 @@ void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, Mat
 		int rvals = this->rectbyte[di++];
 
 		if (rtype == 1) {
+			if (pass != 0) continue;
 			const auto tex = texturestore.find("girl256.png");
 			const auto texunit = ts_any_direct_nearest(&tex->b[0], tex->width, tex->height);
 			DistortShader<ts_any_direct_nearest> the_shader(texunit);
@@ -959,6 +956,7 @@ void Pipedata::render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, Mat
 			}
 			draw_rectangle(tilerect, the_shader);
 		} else if (rtype == 2) {
+			if (pass != 0) continue;
 			const auto tex = texturestore.find("water-girl.png");
 			const auto texunit = ts_any_direct_nearest(&tex->b[0], tex->width, tex->height);
 			OverlayShader<ts_any_direct_nearest> the_shader(texunit);

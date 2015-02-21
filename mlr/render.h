@@ -100,9 +100,9 @@ public:
 	void addUV(const vec4& src);
 	void addLight(const mat4& camera_inverse, const Light& light);
 	Binner binner;
-	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes);
-	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int passes);
-	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx);
+	void render(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass);
+	void render_gltri(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass);
+	void render_rect(__m128 * __restrict db, SOAPixel * __restrict cb, class MaterialStore& materialstore, class TextureStore& texturestore, const Viewdevice& vpd, const int bin_idx, const int pass);
 
 	void addVertex(const Viewport& vp, const vec4& src, const mat4& m);
 
