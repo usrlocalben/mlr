@@ -174,10 +174,13 @@ private:
 	const Viewdevice * batch_vpd;
 	mat4 mv_matrix[32];
 	int mv_matrix_sp;
+	bool gl_in_progress;
 public:
 	void glReset() {
 		mv_matrix_sp = 0;
 		mv_matrix[0] = mat4::ident();
+		vertex_idx = 0;
+		gl_in_progress = false;
 	}
 	void glPushMatrix() {
 		mv_matrix[mv_matrix_sp+1] = mv_matrix[mv_matrix_sp];
@@ -205,20 +208,25 @@ public:
 		mv_matrix[mv_matrix_sp] = m;
 	}
 	void glBegin(const Viewport& vp, const Viewdevice& vpd) {
+		_ASSERT(gl_in_progress == false);
 		vertex_idx = 0;
 		batch_vp = &vp;
 		batch_vpd = &vpd;
 		cur_mat = 0;
+		gl_in_progress = true;
 	}
 	void glEnd() {
-		//assert(vertex_idx==0);
+		_ASSERT(gl_in_progress == true);
+		assert(vertex_idx==0);
+		gl_in_progress = false;
+
 	}
 	__forceinline void glColor(const vec4& v) { cur_col = v; }
 	__forceinline void glNormal(const vec4& v) { cur_nor = v; }
 	__forceinline void glTexture(const vec4& v) { cur_tex = v; }
 	__forceinline void glMaterial(const int v) { cur_mat = v; }
 	__forceinline void glVertex(const vec4& v) {
-		//assert that we are in a batch
+		_ASSERT(gl_in_progress == true);
 		tri_nor[vertex_idx] = cur_nor;
 		tri_col[vertex_idx] = cur_col;
 		tri_tex[vertex_idx] = cur_tex;
