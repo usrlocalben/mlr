@@ -73,13 +73,13 @@ public:
 		offs++; // += offs_inc;
 	}
 
-	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) {
+	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) const {
 		return selectbits(o, n, mask);
 		//return o + (n &bits2float(mask));
 		//return lerp_premul(o, n, selectbits(vec4(0),alpha,mask))
 	}
 
-	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) {
+	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) const {
 		auto cbx = cb+offs;
 		colorproc(vec4::load(&cbx->r), n.v[0], n.v[3], mask).store(&cbx->r);
 		colorproc(vec4::load(&cbx->g), n.v[1], n.v[3], mask).store(&cbx->g);
@@ -125,7 +125,7 @@ public:
 
 class DepthOnly : public FlatShader {
 public:
-	virtual __forceinline void render(const int x, const int y, const ivec4& trimask, const vertex_float& BS) {
+	virtual __forceinline void render(const int x, const int y, const ivec4& trimask, const vertex_float& BS) const {
 		qfloat frag_depth = vertex_blend(BS, vert_depth);
 		qfloat old_depth(vec4::load(db + offs));
 		qfloat new_depth = vmax(frag_depth, old_depth);
@@ -432,14 +432,14 @@ public:
 		texunit.sample(frag_uv, texpx);
 		frag_color = texpx; // .set(texpx);
 	}
-	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) {
+	virtual __forceinline vec4 colorproc(const vec4& o, const vec4& n, const vec4& alpha, const ivec4& mask) const {
 		//return selectbits(o, n, mask);
 		//return o + (n &bits2float(mask));
 		//return lerp_premul(o, n, alpha);
 		return lerp_premul(o, n, selectbits(vec4(0), alpha, mask));
 	}
 
-	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) {
+	virtual __forceinline void colorout(const qfloat4& n, const ivec4& mask) const {
 		auto cbx = cb+offs;
 		colorproc(vec4::load(&cbx->r), n.v[0], n.v[3], mask).store(&cbx->r);
 		colorproc(vec4::load(&cbx->g), n.v[1], n.v[3], mask).store(&cbx->g);
