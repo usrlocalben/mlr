@@ -27,7 +27,7 @@ __forceinline qfloat length(const qfloat2 &a) {
 }
 struct qfloat3 {
 	vec4 v[3];
-	__forceinline void set(const vec4& a) {
+	__forceinline void fill(const vec4& a) {
 		v[0] = a.xxxx();
 		v[1] = a.yyyy();
 		v[2] = a.zzzz();
@@ -48,6 +48,12 @@ struct qfloat4 {
 		v[0] = a.v[0];
 		v[1] = a.v[1];
 		v[2] = a.v[2];
+	}
+	__forceinline void fill(const qfloat& a) {
+		v[0] = a.xxxx();
+		v[1] = a.yyyy();
+		v[2] = a.zzzz();
+		v[3] = a.wwww();
 	}
 };
 __forceinline vec4 dFdx(const vec4& a) {
