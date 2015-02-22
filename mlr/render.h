@@ -212,7 +212,6 @@ public:
 		vertex_idx = 0;
 		batch_vp = &vp;
 		batch_vpd = &vpd;
-		cur_mat = 0;
 		gl_in_progress = true;
 	}
 	void glEnd() {
